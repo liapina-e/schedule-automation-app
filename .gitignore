@@ -1,4 +1,7 @@
 .idea/
+*.iws
+*.iml
+*.ipr
 *.sln.iml
 
 .vs/
@@ -7,16 +10,41 @@
 *.userosscache
 *.sln.docstates
 
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+[Bb]in/
+[Oo]bj/
+[Bb]uild/
+[Rr]elease/
 [Dd]ebug/
 [Dd]ebugPublic/
-[Rr]elease/
 [Rr]eleases/
 x64/
 x86/
-[Bb]uild/
-[Bb]uild/
 bld/
-[Bb]in/
-[Oo]bj/
+[Oo]ut/
 
 packages/
+*.nupkg
+.nuget/
+
+/src/*/bin/
+/src/*/obj/
+/src/*/[Bb]uild/
+/src/*/[Dd]ebug/
+/src/*/[Rr]elease/
+
+*.cache
+*.log
+*.tmp
+*.temp
+*.swp
+*~
+~$*
+
+*.userprefs
