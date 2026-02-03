@@ -44,3 +44,5 @@ packages/
 
 *.userprefs
 *.csproj.user
+.DS_Store
+**/.DS_Store
