@@ -1,0 +1,67 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:schedule_automation_app_client.ViewModels"
+        x:Class="schedule_automation_app_client.Views.SubjectDialog"
+        x:DataType="vm:SubjectDialogViewModel"
+        Title="{Binding Title}"
+        Width="400"
+        Height="260"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False">
+
+    <Design.DataContext>
+        <vm:SubjectDialogViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="*,Auto" Margin="20">
+
+        <StackPanel Grid.Row="0" Spacing="14">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Название предмета" FontWeight="SemiBold"/>
+                <TextBox Text="{Binding Name}"
+                         Watermark="Например: Математический анализ"/>
+                <TextBlock Text="{Binding NameError}"
+                           Foreground="#dc3545"
+                           FontSize="12"
+                           IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Целевая оценка (от 4 до 10)" FontWeight="SemiBold"/>
+                <NumericUpDown Value="{Binding TargetGradeValue}"
+                               Minimum="4"
+                               Maximum="10"
+                               Increment="1"
+                               FormatString="0"
+                               AllowSpin="True"/>
+                <TextBlock Text="{Binding GradeError}"
+                           Foreground="#dc3545"
+                           FontSize="12"
+                           IsVisible="{Binding GradeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+
+        </StackPanel>
+
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="10"
+                    Margin="0,14,0,0">
+
+            <Button Content="Отмена"
+                    Command="{Binding CancelCommand}"
+                    Padding="18,7"/>
+
+            <Button Content="Сохранить"
+                    Command="{Binding SaveCommand}"
+                    Padding="18,7"
+                    Background="#1976D2"
+                    Foreground="White"/>
+
+        </StackPanel>
+
+    </Grid>
+
+</Window>

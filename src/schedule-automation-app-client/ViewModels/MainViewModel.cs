@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia;
 using schedule_automation_app_client.Models;
 using schedule_automation_app_client.Services;
-
+using schedule_automation_app_client.Views;
+ 
 namespace schedule_automation_app_client.ViewModels;
-
+ 
 public class MainViewModel : ViewModelBase
 {
     private Subject _selectedSubject;
@@ -53,7 +57,7 @@ public class MainViewModel : ViewModelBase
             return $"Сумма весов: {totalWeight}% из 100%";
         }
     }
-
+ 
     public bool IsFormulaValid
     {
         get
@@ -76,7 +80,7 @@ public class MainViewModel : ViewModelBase
     public ICommand AddSubjectCommand { get; set; }
     public ICommand EditSubjectCommand { get; set; }
     public ICommand DeleteSubjectCommand { get; set; }
-
+ 
     public MainViewModel()
     {
         InitializeTestData();
@@ -85,7 +89,7 @@ public class MainViewModel : ViewModelBase
         
         StatusMessage = "Готово к работе. Выберите предмет или добавьте новый.";
     }
-
+ 
     private void InitializeTestData()
 {
     Subjects = new ObservableCollection<Subject>
@@ -95,8 +99,8 @@ public class MainViewModel : ViewModelBase
             Id = Guid.NewGuid(),
             Name = "Математический анализ", 
             TargetGrade = 8,
-            CreatedDate = DateTime.Now.AddDays(-5),
-            Formula = new ObservableCollection<GradeComponent>
+            CreatedAt = DateTime.Now.AddDays(-5),
+            Formula = new List<GradeComponent>
             {
                 new GradeComponent { Name = "Домашняя работа 1", Weight = 15, Complexity = 3 },
                 new GradeComponent { Name = "Домашняя работа 2", Weight = 15, Complexity = 3 },
@@ -109,8 +113,8 @@ public class MainViewModel : ViewModelBase
             Id = Guid.NewGuid(),
             Name = "Физика", 
             TargetGrade = 7,
-            CreatedDate = DateTime.Now.AddDays(-3),
-            Formula = new ObservableCollection<GradeComponent>()
+            CreatedAt = DateTime.Now.AddDays(-3),
+            Formula = new List<GradeComponent>()
             {
                 new GradeComponent { Name = "Лабораторная 1", Weight = 25, Complexity = 4 },
                 new GradeComponent { Name = "Лабораторная 2", Weight = 25, Complexity = 4 },
@@ -123,8 +127,8 @@ public class MainViewModel : ViewModelBase
             Id = Guid.NewGuid(),
             Name = "Программирование", 
             TargetGrade = 9,
-            CreatedDate = DateTime.Now,
-            Formula = new ObservableCollection<GradeComponent>
+            CreatedAt = DateTime.Now,
+            Formula = new List<GradeComponent>
             {
                 new GradeComponent { Name = "Проект", Weight = 40, Complexity = 6 },
                 new GradeComponent { Name = "Практические задания", Weight = 30, Complexity = 4 },
@@ -133,37 +137,65 @@ public class MainViewModel : ViewModelBase
         }
     };
 }
-
+ 
     private void InitializeCommands()
     {
         AddSubjectCommand = new RelayCommand(ExecuteAddSubject);
         EditSubjectCommand = new RelayCommand(ExecuteEditSubject, () => CanEditSubject);
         DeleteSubjectCommand = new RelayCommand(ExecuteDeleteSubject, () => CanDeleteSubject);
     }
-
-    private void ExecuteAddSubject()
+ 
+    private async void ExecuteAddSubject()
     {
-        // TODO: Позже здесь будет открытие окна добавления
-        Subject newSubject = new Subject
+        var vm = new SubjectDialogViewModel();
+        var dialog = new SubjectDialog(vm);
+ 
+        var owner = GetMainWindow();
+        if (owner != null)
+            await dialog.ShowDialog(owner);
+        else
+            dialog.Show();
+ 
+        if (vm.Result != null)
         {
-            Id = Guid.NewGuid(),
-            Name = $"Новый предмет {Subjects.Count + 1}",
-            TargetGrade = 6,
-            CreatedDate = DateTime.Now
-        };
-        
-        Subjects.Add(newSubject);
-        StatusMessage = $"Добавлен предмет: {newSubject.Name}";
+            Subjects.Add(vm.Result);
+            SelectedSubject = vm.Result;
+            StatusMessage = $"Добавлен предмет: {vm.Result.Name}";
+        }
     }
-
-    private void ExecuteEditSubject()
+ 
+    private async void ExecuteEditSubject()
     {
         if (SelectedSubject == null) return;
-        
-        // TODO: Позже здесь будет открытие окна редактирования
-        StatusMessage = $"Редактируется: {SelectedSubject.Name} (пока заглушка)";
+ 
+        var vm = new SubjectDialogViewModel();
+        vm.LoadSubject(SelectedSubject);
+        var dialog = new SubjectDialog(vm);
+ 
+        var owner = GetMainWindow();
+        if (owner != null)
+            await dialog.ShowDialog(owner);
+        else
+            dialog.Show();
+ 
+        if (vm.Result != null)
+        {
+            SelectedSubject.Name = vm.Result.Name;
+            SelectedSubject.TargetGrade = vm.Result.TargetGrade;
+            StatusMessage = $"Предмет обновлён: {SelectedSubject.Name}";
+            // Обновляем отображение списка
+            OnPropertyChanged(nameof(SelectedSubject));
+            UpdateStatusMessage();
+        }
     }
-
+ 
+    private static Window? GetMainWindow()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            return desktop.MainWindow;
+        return null;
+    }
+ 
     private void ExecuteDeleteSubject()
     {
         if (SelectedSubject == null) return;
@@ -176,7 +208,7 @@ public class MainViewModel : ViewModelBase
         
         StatusMessage = $"Удалён предмет: {subjectName}";
     }
-
+ 
     private void UpdateStatusMessage()
     {
         if (SelectedSubject == null)
@@ -197,7 +229,7 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsFormulaValid));
         OnPropertyChanged(nameof(FormulaStatusColor));
     }
-
+ 
     private void RaiseCanExecuteForCommands()
     {
         if (EditSubjectCommand is RelayCommand editCommand)

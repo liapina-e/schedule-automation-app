@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -11,9 +10,9 @@ public class Subject : INotifyPropertyChanged
     private Guid _id;
     private string _name;
     private int _targetGrade;
-    private ObservableCollection<GradeComponent> _formula;
-    private DateTime _createdDate;
-    private DateTime _updatedDate;
+    private List<GradeComponent> _formula;
+    private DateTime _createdAt;
+    private DateTime _updatedAt;
     
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -44,22 +43,22 @@ public class Subject : INotifyPropertyChanged
         }
     }
 
-    public ObservableCollection<GradeComponent> Formula
+    public List<GradeComponent> Formula
     {
         get => _formula;
         set => SetField(ref _formula, value);
     }
 
-    public DateTime CreatedDate
+    public DateTime CreatedAt
     {
-        get => _createdDate;
-        set => SetField(ref _createdDate, value);
+        get => _createdAt;
+        set => SetField(ref _createdAt, value);
     }
 
-    public DateTime UpdatedDate
+    public DateTime UpdatedAt
     {
-        get => _updatedDate;
-        set => SetField(ref _updatedDate, value);
+        get => _updatedAt;
+        set => SetField(ref _updatedAt, value);
     }
 
     public Subject()
@@ -67,9 +66,9 @@ public class Subject : INotifyPropertyChanged
         Id = Guid.NewGuid();
         Name = "Новый предмет";
         TargetGrade = 4; // мин оценка по умолчанию
-        Formula = new ObservableCollection<GradeComponent>();
-        CreatedDate = DateTime.Now;
-        UpdatedDate = DateTime.Now;
+        Formula = new List<GradeComponent>();
+        CreatedAt = DateTime.Now;
+        UpdatedAt = DateTime.Now;
     }
 
     protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -86,9 +85,9 @@ public class Subject : INotifyPropertyChanged
 
         field = value;
         OnPropertyChanged(propertyName);
-        if (propertyName != nameof(UpdatedDate))
+        if (propertyName != nameof(UpdatedAt))
         {
-            UpdatedDate = DateTime.Now;
+            UpdatedAt = DateTime.Now;
         }
                 
         return true;
