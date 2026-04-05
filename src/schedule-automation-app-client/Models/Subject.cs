@@ -10,7 +10,7 @@ public class Subject : INotifyPropertyChanged
     private Guid _id;
     private string _name;
     private int _targetGrade;
-    // private List<GradeComponent> _formula;
+    private List<GradeComponent> _formula;
     private DateTime _createdAt;
     private DateTime _updatedAt;
     
@@ -43,11 +43,11 @@ public class Subject : INotifyPropertyChanged
         }
     }
 
-    // public List<GradeComponent> Formula
-    // {
-    //     get => _formula;
-    //     set => SetField(ref _formula, value);
-    // }
+    public List<GradeComponent> Formula
+    {
+        get => _formula;
+        set => SetField(ref _formula, value);
+    }
 
     public DateTime CreatedAt
     {
@@ -65,8 +65,8 @@ public class Subject : INotifyPropertyChanged
     {
         Id = Guid.NewGuid();
         Name = "Новый предмет";
-        TargetGrade = 6; // мин оценка по умолчанию
-        // Formula = new List<GradeComponent>();
+        TargetGrade = 4; // мин оценка по умолчанию
+        Formula = new List<GradeComponent>();
         CreatedAt = DateTime.Now;
         UpdatedAt = DateTime.Now;
     }
