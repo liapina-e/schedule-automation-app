@@ -1,52 +1,90 @@
-<?xml version="1.0" encoding="utf-8"?>
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="schedule_automation_app_client.Controls.FormulaTab">
-    
-    <Grid Margin="15">
-        <!-- Простой текст пока -->
-        <StackPanel HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   Spacing="20">
-            
-            <TextBlock Text=""
-                      FontSize="48"
-                      HorizontalAlignment="Center"/>
-            
-            <TextBlock Text="Формула оценки"
-                      FontSize="20"
-                      FontWeight="Bold"
-                      HorizontalAlignment="Center"/>
-            
-            <Border Background="#F0F8FF"
-                    Padding="20"
-                    CornerRadius="10"
-                    Width="400">
-                <StackPanel>
-                    <TextBlock Text="Эта вкладка будет показывать:"
-                              FontWeight="SemiBold"
-                              Margin="0,0,0,10"/>
-                    
-                    <StackPanel Spacing="5" Margin="10">
-                        <TextBlock Text="• Список компонентов формулы"/>
-                        <TextBlock Text="• Вес каждого компонента"/>
-                        <TextBlock Text="• Сложность компонентов"/>
-                        <TextBlock Text="• Текущие оценки"/>
-                        <TextBlock Text="• Сумму весов (должна быть 100%)"/>
-                    </StackPanel>
-                    
-                    <Separator Margin="0,15,0,10"/>
-                    
-                    <TextBlock Text="Выберите предмет во вкладке 'Предметы'"
-                              FontStyle="Italic"
-                              Foreground="#666"
-                              HorizontalAlignment="Center"/>
-                </StackPanel>
-            </Border>
-            
-            <TextBlock Text="В разработке..."
-                      FontStyle="Italic"
-                      Foreground="#999"/>
-        </StackPanel>
+             xmlns:vm="clr-namespace:schedule_automation_app_client.ViewModels"
+             x:Class="schedule_automation_app_client.Controls.FormulaTab"
+             x:DataType="vm:MainViewModel">
+
+    <Design.DataContext>
+        <vm:MainViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="10">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{Binding SelectedSubject.Name}"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           IsVisible="{Binding CanEditSubject}"/>
+                <TextBlock Text="Выберите предмет во вкладке «Предметы»"
+                           FontStyle="Italic"
+                           Foreground="#999"
+                           IsVisible="{Binding !CanEditSubject}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="8">
+                <Button Content="+ Добавить компонент"
+                        Command="{Binding AddComponentCommand}"
+                        IsEnabled="{Binding CanAddComponent}"
+                        Padding="12,5"/>
+                <Button Content="Удалить"
+                        Command="{Binding DeleteComponentCommand}"
+                        IsEnabled="{Binding CanDeleteComponent}"
+                        Padding="12,5"/>
+            </StackPanel>
+
+        </Grid>
+
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding SelectedSubject.Formula}"
+                  SelectedItem="{Binding SelectedComponent}"
+                  AutoGenerateColumns="False"
+                  CanUserReorderColumns="False"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="False"
+                  IsVisible="{Binding CanEditSubject}"
+                  CellEditEnded="OnCellEditEnded">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Название"
+                                    Binding="{Binding Name}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Вес (%)"
+                                    Binding="{Binding Weight}"
+                                    Width="90"/>
+                <DataGridTextColumn Header="Сложность (1-10)"
+                                    Binding="{Binding Complexity}"
+                                    Width="130"/>
+                <DataGridTextColumn Header="Текущая оценка"
+                                    Binding="{Binding CurrentGrade}"
+                                    Width="130"/>
+            </DataGrid.Columns>
+
+        </DataGrid>
+
+        <Border Grid.Row="2"
+                Margin="0,10,0,0"
+                Padding="12,8"
+                CornerRadius="5"
+                Background="{Binding FormulaStatusColor}"
+                IsVisible="{Binding CanEditSubject}">
+            <TextBlock Text="{Binding TotalWeightMessage}"
+                       Foreground="White"
+                       FontWeight="SemiBold"/>
+        </Border>
+
+        <Border Grid.Row="3"
+                Background="#F0F0F0"
+                Padding="10"
+                Margin="0,8,0,0">
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontStyle="Italic"
+                       Foreground="#666"/>
+        </Border>
+
     </Grid>
+
 </UserControl>
