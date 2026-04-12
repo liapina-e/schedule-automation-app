@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
@@ -19,6 +18,8 @@ public class MainViewModel : ViewModelBase
     private ObservableCollection<Subject> _subjects;
     private GradeComponent _selectedComponent;
 
+    private readonly IStorageService _storageService;
+
     public ObservableCollection<Subject> Subjects
     {
         get => _subjects;
@@ -32,9 +33,23 @@ public class MainViewModel : ViewModelBase
         {
             if (SetField(ref _selectedSubject, value))
             {
+                OnPropertyChanged(nameof(CurrentFormula));
                 UpdateStatusMessage();
                 RaiseCanExecuteForCommands();
             }
+        }
+    }
+
+    public ObservableCollection<GradeComponent> CurrentFormula
+    {
+        get
+        {
+            if (SelectedSubject == null)
+            {
+                return null;
+            }
+
+            return SelectedSubject.Formula;
         }
     }
 
@@ -100,44 +115,35 @@ public class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
-        InitializeTestData();
+        _storageService = new JsonStorageService();
+
+        Subjects = new ObservableCollection<Subject>();
+
         InitializeCommands();
-        StatusMessage = "Готово к работе. Выберите предмет или добавьте новый.";
+
+        StatusMessage = "Загрузка данных...";
+
+        LoadSubjectsAsync();
     }
 
-    private void InitializeTestData()
+    private async void LoadSubjectsAsync()
     {
-        Subjects = new ObservableCollection<Subject>
+        ObservableCollection<Subject> loaded = await _storageService.LoadAsync();
+
+        if (loaded.Count == 0)
         {
-            new Subject
-            {
-                Id = Guid.NewGuid(),
-                Name = "Математический анализ",
-                TargetGrade = 8,
-                CreatedAt = DateTime.Now.AddDays(-5),
-                Formula = new List<GradeComponent>
-                {
-                    new GradeComponent { Name = "Домашняя работа 1", Weight = 15, Complexity = 3 },
-                    new GradeComponent { Name = "Домашняя работа 2", Weight = 15, Complexity = 3 },
-                    new GradeComponent { Name = "Контрольная работа", Weight = 30, Complexity = 5 },
-                    new GradeComponent { Name = "Экзамен", Weight = 40, Complexity = 8 }
-                }
-            },
-            new Subject
-            {
-                Id = Guid.NewGuid(),
-                Name = "Физика",
-                TargetGrade = 7,
-                CreatedAt = DateTime.Now.AddDays(-3),
-                Formula = new List<GradeComponent>
-                {
-                    new GradeComponent { Name = "Лабораторная 1", Weight = 25, Complexity = 4 },
-                    new GradeComponent { Name = "Лабораторная 2", Weight = 25, Complexity = 4 },
-                    new GradeComponent { Name = "Тест", Weight = 20, Complexity = 3 },
-                    new GradeComponent { Name = "Экзамен", Weight = 30, Complexity = 7 }
-                }
-            }
-        };
+            StatusMessage = "Нет сохранённых предметов. Добавьте первый предмет.";
+        }
+        else
+        {
+            Subjects = loaded;
+            StatusMessage = $"Загружено предметов: {loaded.Count}";
+        }
+    }
+
+    private async void SaveSubjectsAsync()
+    {
+        await _storageService.SaveAsync(Subjects);
     }
 
     private void InitializeCommands()
@@ -169,6 +175,7 @@ public class MainViewModel : ViewModelBase
             Subjects.Add(vm.Result);
             SelectedSubject = vm.Result;
             StatusMessage = $"Добавлен предмет: {vm.Result.Name}";
+            SaveSubjectsAsync();
         }
     }
 
@@ -179,11 +186,11 @@ public class MainViewModel : ViewModelBase
             return;
         }
 
-        var vm = new SubjectDialogViewModel();
+        SubjectDialogViewModel vm = new SubjectDialogViewModel();
         vm.LoadSubject(SelectedSubject);
-        var dialog = new SubjectDialog(vm);
+        SubjectDialog dialog = new SubjectDialog(vm);
 
-        var owner = GetMainWindow();
+        Window? owner = GetMainWindow();
         if (owner != null)
         {
             await dialog.ShowDialog(owner);
@@ -200,6 +207,7 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(SelectedSubject));
             UpdateStatusMessage();
             StatusMessage = $"Предмет обновлён: {SelectedSubject.Name}";
+            SaveSubjectsAsync();
         }
     }
 
@@ -214,6 +222,7 @@ public class MainViewModel : ViewModelBase
         Subjects.Remove(SelectedSubject);
         SelectedSubject = null;
         StatusMessage = $"Удалён предмет: {subjectName}";
+        SaveSubjectsAsync();
     }
 
     private void ExecuteAddComponent()
@@ -233,8 +242,10 @@ public class MainViewModel : ViewModelBase
 
         SelectedSubject.Formula.Add(component);
         SelectedComponent = component;
+        OnPropertyChanged(nameof(CurrentFormula));
         RefreshFormulaStats();
         StatusMessage = $"Добавлен компонент: {component.Name}";
+        SaveSubjectsAsync();
     }
 
     private void ExecuteDeleteComponent()
@@ -247,8 +258,10 @@ public class MainViewModel : ViewModelBase
         string componentName = SelectedComponent.Name;
         SelectedSubject.Formula.Remove(SelectedComponent);
         SelectedComponent = null;
+        OnPropertyChanged(nameof(CurrentFormula));
         RefreshFormulaStats();
         StatusMessage = $"Удалён компонент: {componentName}";
+        SaveSubjectsAsync();
     }
 
     public void RefreshFormulaStats()
@@ -256,6 +269,7 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalWeightMessage));
         OnPropertyChanged(nameof(IsFormulaValid));
         OnPropertyChanged(nameof(FormulaStatusColor));
+        SaveSubjectsAsync();
     }
 
     private void UpdateStatusMessage()

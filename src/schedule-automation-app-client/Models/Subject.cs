@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -10,7 +11,7 @@ public class Subject : INotifyPropertyChanged
     private Guid _id;
     private string _name;
     private int _targetGrade;
-    private List<GradeComponent> _formula;
+    private ObservableCollection<GradeComponent> _formula;
     private DateTime _createdAt;
     private DateTime _updatedAt;
     
@@ -36,14 +37,13 @@ public class Subject : INotifyPropertyChanged
             if (value < 4 || value > 10)
             {
                 throw new ArgumentOutOfRangeException(nameof(TargetGrade), "Оценка должна быть от 4 до 10");
-
             }
                 
             SetField(ref _targetGrade, value);
         }
     }
 
-    public List<GradeComponent> Formula
+    public ObservableCollection<GradeComponent> Formula
     {
         get => _formula;
         set => SetField(ref _formula, value);
@@ -65,8 +65,8 @@ public class Subject : INotifyPropertyChanged
     {
         Id = Guid.NewGuid();
         Name = "Новый предмет";
-        TargetGrade = 4; // мин оценка по умолчанию
-        Formula = new List<GradeComponent>();
+        TargetGrade = 4;
+        Formula = new ObservableCollection<GradeComponent>();
         CreatedAt = DateTime.Now;
         UpdatedAt = DateTime.Now;
     }
