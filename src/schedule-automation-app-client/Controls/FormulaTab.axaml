@@ -39,7 +39,7 @@
         </Grid>
 
         <DataGrid Grid.Row="1"
-                  ItemsSource="{Binding SelectedSubject.Formula}"
+                  ItemsSource="{Binding CurrentFormula}"
                   SelectedItem="{Binding SelectedComponent}"
                   AutoGenerateColumns="False"
                   CanUserReorderColumns="False"
