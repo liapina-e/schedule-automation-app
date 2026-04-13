@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using schedule_automation_app_client.Models;
 using schedule_automation_app_client.Services;
+using schedule_automation_app_client.Services.Dtos;
 using schedule_automation_app_client.Views;
 
 namespace schedule_automation_app_client.ViewModels;
@@ -19,6 +20,11 @@ public class MainViewModel : ViewModelBase
     private GradeComponent _selectedComponent;
 
     private readonly IStorageService _storageService;
+    
+    private readonly IApiService _apiService;
+    private PlanResponseDto? _currentPlan;
+    private bool _isLoading;
+    private string _serverStatus;
 
     public ObservableCollection<Subject> Subjects
     {
@@ -106,18 +112,42 @@ public class MainViewModel : ViewModelBase
     public bool CanDeleteSubject => SelectedSubject != null;
     public bool CanAddComponent => SelectedSubject != null;
     public bool CanDeleteComponent => SelectedSubject != null && SelectedComponent != null;
+    
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set => SetField(ref _isLoading, value);
+    }
+
+    public string ServerStatus
+    {
+        get => _serverStatus;
+        set => SetField(ref _serverStatus, value);
+    }
+
+    public PlanResponseDto? CurrentPlan
+    {
+        get => _currentPlan;
+        set => SetField(ref _currentPlan, value);
+    }
+
+    public bool CanCalculatePlan => SelectedSubject != null && IsFormulaValid && !IsLoading;
 
     public ICommand AddSubjectCommand { get; set; }
     public ICommand EditSubjectCommand { get; set; }
     public ICommand DeleteSubjectCommand { get; set; }
     public ICommand AddComponentCommand { get; set; }
     public ICommand DeleteComponentCommand { get; set; }
+    
+    public ICommand CalculatePlanCommand { get; set; }
 
     public MainViewModel()
     {
         _storageService = new JsonStorageService();
 
         Subjects = new ObservableCollection<Subject>();
+        
+        _apiService = new ApiService();
 
         InitializeCommands();
 
@@ -153,14 +183,45 @@ public class MainViewModel : ViewModelBase
         DeleteSubjectCommand = new RelayCommand(ExecuteDeleteSubject, () => CanDeleteSubject);
         AddComponentCommand = new RelayCommand(ExecuteAddComponent, () => CanAddComponent);
         DeleteComponentCommand = new RelayCommand(ExecuteDeleteComponent, () => CanDeleteComponent);
+        CalculatePlanCommand = new RelayCommand(ExecuteCalculatePlan, () => CanCalculatePlan);
     }
 
+    private async void ExecuteCalculatePlan()
+    {
+        if (SelectedSubject == null || !IsFormulaValid)
+        {
+            return;
+        }
+
+        IsLoading = true;
+        ServerStatus = "Отправляем запрос на сервер...";
+        (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+
+        PlanResponseDto? plan = await _apiService.CalculatePlanAsync(SelectedSubject);
+
+        IsLoading = false;
+
+        if (plan == null)
+        {
+            ServerStatus = "Сервер недоступен. Проверьте подключение.";
+            CurrentPlan = null;
+        }
+        else
+        {
+            CurrentPlan = plan;
+            ServerStatus = $"План рассчитан. Текущая оценка: {plan.CurrentGrade:F1}";
+        }
+
+        (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        OnPropertyChanged(nameof(CanCalculatePlan));
+    }
+    
     private async void ExecuteAddSubject()
     {
-        var vm = new SubjectDialogViewModel();
-        var dialog = new SubjectDialog(vm);
+        SubjectDialogViewModel vm = new SubjectDialogViewModel();
+        SubjectDialog dialog = new SubjectDialog(vm);
 
-        var owner = GetMainWindow();
+        Window? owner = GetMainWindow();
         if (owner != null)
         {
             await dialog.ShowDialog(owner);
@@ -232,7 +293,7 @@ public class MainViewModel : ViewModelBase
             return;
         }
 
-        var component = new GradeComponent
+        GradeComponent component = new GradeComponent
         {
             Name = $"Компонент {SelectedSubject.Formula.Count + 1}",
             Weight = 10,
@@ -296,11 +357,13 @@ public class MainViewModel : ViewModelBase
         (DeleteSubjectCommand as RelayCommand)?.RaiseCanExecuteChanged();
         (AddComponentCommand as RelayCommand)?.RaiseCanExecuteChanged();
         (DeleteComponentCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
 
         OnPropertyChanged(nameof(CanEditSubject));
         OnPropertyChanged(nameof(CanDeleteSubject));
         OnPropertyChanged(nameof(CanAddComponent));
         OnPropertyChanged(nameof(CanDeleteComponent));
+        OnPropertyChanged(nameof(CanCalculatePlan));
     }
 
     private static Window? GetMainWindow()
