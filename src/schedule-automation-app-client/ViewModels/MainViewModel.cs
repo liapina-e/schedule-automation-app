@@ -40,6 +40,7 @@ public class MainViewModel : ViewModelBase
         {
             if (SetField(ref _selectedSubject, value))
             {
+                CurrentPlan = null;
                 OnPropertyChanged(nameof(CurrentFormula));
                 UpdateStatusMessage();
                 RaiseCanExecuteForCommands();
