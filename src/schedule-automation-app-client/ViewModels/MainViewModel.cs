@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -194,24 +195,31 @@ public class MainViewModel : ViewModelBase
         }
 
         IsLoading = true;
-        ServerStatus = "Отправляем запрос на сервер...";
+        StatusMessage = "Считаем план...";
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
 
-        PlanResponseDto? plan = await _apiService.CalculatePlanAsync(SelectedSubject);
+        // убрать заглушку когда сервер будет готов
+        await Task.Delay(500);
+
+        CurrentPlan = new PlanResponseDto(
+            Id: SelectedSubject.Id,
+            Name: SelectedSubject.Name,
+            CurrentGrade: SelectedSubject.Formula.Sum(c => c.CurrentGrade * c.Weight / 100),
+            TargetGrade: SelectedSubject.TargetGrade,
+            OptimalPlan: SelectedSubject.Formula
+                .OrderByDescending(c => c.Weight / c.Complexity)
+                .Select(c => new ComponentRequestDto(
+                    Name: c.Name,
+                    Weight: c.Weight,
+                    Complexity: c.Complexity,
+                    CurrentGrade: c.CurrentGrade,
+                    IsBlocking: false,
+                    MinimumGrade: 0
+                )).ToList()
+        );
 
         IsLoading = false;
-
-        if (plan == null)
-        {
-            ServerStatus = "Сервер недоступен. Проверьте подключение.";
-            CurrentPlan = null;
-        }
-        else
-        {
-            CurrentPlan = plan;
-            ServerStatus = $"План рассчитан. Текущая оценка: {plan.CurrentGrade:F1}";
-        }
-
+        StatusMessage = $"План рассчитан. Текущая оценка: {CurrentPlan.CurrentGrade:F1}";
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         OnPropertyChanged(nameof(CanCalculatePlan));
     }

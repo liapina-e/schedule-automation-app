@@ -4,24 +4,28 @@
         xmlns:controls="clr-namespace:schedule_automation_app_client.Controls"
         xmlns:vm="clr-namespace:schedule_automation_app_client.ViewModels"
         x:Class="schedule_automation_app_client.MainWindow"
-        Title="Study Planner - Планировщик учебной нагрузки"
+        Title="Планировщик учебной нагрузки"
         Width="900"
         Height="650">
-    
+
     <Design.DataContext>
         <vm:MainViewModel/>
     </Design.DataContext>
-    
+
     <TabControl Margin="10">
-        <!-- Вкладка 1: Предметы -->
+
         <TabItem Header="Предметы">
             <controls:SubjectsTab/>
         </TabItem>
-        
-        <!-- Вкладка 2: Формула -->
+
         <TabItem Header="Формула">
             <controls:FormulaTab/>
         </TabItem>
+
+        <TabItem Header="План">
+            <controls:PlanTab/>
+        </TabItem>
+
     </TabControl>
-    
+
 </Window>
