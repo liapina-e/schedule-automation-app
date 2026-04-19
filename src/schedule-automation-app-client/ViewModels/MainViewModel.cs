@@ -26,6 +26,8 @@ public class MainViewModel : ViewModelBase
     private PlanResponseDto? _currentPlan;
     private bool _isLoading;
     private string _serverStatus;
+    
+    private WhatIfViewModel _whatIf;
 
     public ObservableCollection<Subject> Subjects
     {
@@ -41,6 +43,12 @@ public class MainViewModel : ViewModelBase
             if (SetField(ref _selectedSubject, value))
             {
                 CurrentPlan = null;
+                
+                if (value != null)
+                {
+                    WhatIf.LoadFromSubject(value);
+                }
+                
                 OnPropertyChanged(nameof(CurrentFormula));
                 UpdateStatusMessage();
                 RaiseCanExecuteForCommands();
@@ -134,6 +142,12 @@ public class MainViewModel : ViewModelBase
     }
 
     public bool CanCalculatePlan => SelectedSubject != null && IsFormulaValid && !IsLoading;
+    
+    public WhatIfViewModel WhatIf
+    {
+        get => _whatIf;
+        set => SetField(ref _whatIf, value);
+    }
 
     public ICommand AddSubjectCommand { get; set; }
     public ICommand EditSubjectCommand { get; set; }
@@ -156,6 +170,9 @@ public class MainViewModel : ViewModelBase
         StatusMessage = "Загрузка данных...";
 
         LoadSubjectsAsync();
+        
+        _whatIf = new WhatIfViewModel();
+        WhatIf = _whatIf;
     }
 
     private async void LoadSubjectsAsync()
