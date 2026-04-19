@@ -1,0 +1,154 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:schedule_automation_app_client.ViewModels"
+             x:Class="schedule_automation_app_client.Controls.PlanTab"
+             x:DataType="vm:MainViewModel">
+
+    <Design.DataContext>
+        <vm:MainViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="10">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{Binding SelectedSubject.Name}"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           IsVisible="{Binding CanEditSubject}"/>
+                <TextBlock Text="Выберите предмет во вкладке «Предметы»"
+                           FontStyle="Italic"
+                           Foreground="#999"
+                           IsVisible="{Binding !CanEditSubject}"/>
+            </StackPanel>
+
+            <Button Grid.Column="1"
+                    Content="Рассчитать план"
+                    Command="{Binding CalculatePlanCommand}"
+                    IsEnabled="{Binding CanCalculatePlan}"
+                    Padding="15,7"
+                    Background="#1976D2"
+                    Foreground="White"/>
+
+        </Grid>
+
+        <!-- текущая и целевая оценка -->
+        <Border Grid.Row="1"
+                Background="#F0F8FF"
+                CornerRadius="8"
+                Padding="15"
+                Margin="0,0,0,10"
+                IsVisible="{Binding CanEditSubject}">
+            <Grid ColumnDefinitions="*,*,*">
+
+                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                    <TextBlock Text="Текущая оценка"
+                               Foreground="#666"
+                               FontSize="12"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentPlan.CurrentGrade, StringFormat={}{0:F1}}"
+                               FontSize="32"
+                               FontWeight="Bold"
+                               Foreground="#1976D2"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Text="→"
+                           FontSize="32"
+                           Foreground="#999"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                    <TextBlock Text="Целевая оценка"
+                               Foreground="#666"
+                               FontSize="12"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding SelectedSubject.TargetGrade}"
+                               FontSize="32"
+                               FontWeight="Bold"
+                               Foreground="#28a745"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="2"
+                      IsVisible="{Binding CurrentPlan, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel Spacing="8">
+
+                <TextBlock Text="Оптимальный план:"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,4"/>
+
+                <ItemsControl ItemsSource="{Binding CurrentPlan.OptimalPlan}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#F8F9FA"
+                                    CornerRadius="6"
+                                    Padding="12"
+                                    Margin="0,0,0,6">
+                                <Grid RowDefinitions="Auto,Auto">
+
+                                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Name}"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding CurrentGrade, StringFormat={}{0:F1}}"
+                                                   Foreground="#1976D2"
+                                                   FontWeight="Bold"/>
+                                    </Grid>
+
+                                    <ProgressBar Grid.Row="1"
+                                                 Value="{Binding CurrentGrade}"
+                                                 Minimum="0"
+                                                 Maximum="10"
+                                                 Height="6"
+                                                 Margin="0,6,0,0"/>
+
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="10"
+                    IsVisible="{Binding CurrentPlan, Converter={x:Static ObjectConverters.IsNull}}">
+            <TextBlock Text="План ещё не рассчитан"
+                       FontSize="16"
+                       Foreground="#999"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="Настройте формулу и нажмите «Рассчитать план»"
+                       Foreground="#bbb"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <Border Grid.Row="3"
+                Background="#F0F0F0"
+                Padding="10"
+                Margin="0,8,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusMessage}"
+                           FontStyle="Italic"
+                           Foreground="#666"/>
+                <TextBlock Grid.Column="1"
+                           Text="Загрузка..."
+                           Foreground="#1976D2"
+                           IsVisible="{Binding IsLoading}"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+
+</UserControl>
