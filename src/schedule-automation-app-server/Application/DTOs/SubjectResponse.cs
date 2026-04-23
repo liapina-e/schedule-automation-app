@@ -6,5 +6,7 @@ public class SubjectResponse
     public string Name { get; set; } = string.Empty;
     public double CurrentGrade { get; set; }
     public int TargetGrade { get; set; }
-    public List<ComponentDto> OptimalPlan { get; set; } = new();
+    public bool IsAchievable { get; set; }
+    public string Recommendation { get; set; } = string.Empty;
+    public List<OptimizationItemDto> OptimalPlan { get; set; } = new();
 }

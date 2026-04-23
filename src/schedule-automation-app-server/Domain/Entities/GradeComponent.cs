@@ -9,7 +9,6 @@ public class GradeComponent : BaseEntity
     public Weight Weight { get; set; } = null!;
     public Complexity Complexity { get; set; } = null!;
     public Grade CurrentGrade { get; set; } = null!;
-
     public bool IsBlocking { get; set; }
     public double MinimumGrade { get; set; }
 
@@ -22,6 +21,8 @@ public class GradeComponent : BaseEntity
         Complexity = complexity;
         CurrentGrade = currentGrade;
     }
-    
-    public double GetEfficiency() => Weight.Value * 100 / Complexity.Value;
+
+    public bool IsCompleted() => CurrentGrade.Value > 0;
+
+    public bool IsMinimumSatisfied() => !IsBlocking || CurrentGrade.Value >= MinimumGrade;
 }

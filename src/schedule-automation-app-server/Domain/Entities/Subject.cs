@@ -9,28 +9,32 @@ public class Subject : BaseEntity
     public List<GradeComponent> Components { get; private set; } = new();
     public DateTime CreatedAt { get; private set; }
 
+    private Subject() { }
+
     public Subject(string name, int targetGrade)
     {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Название предмета не может быть пустым.");
+        }
+
+        if (targetGrade < 4 || targetGrade > 10)
+        {
+            throw new ArgumentException("Целевая оценка должна быть от 4 до 10.");
+        }
+
         Name = name;
         TargetGrade = targetGrade;
         CreatedAt = DateTime.UtcNow;
     }
-    
+
     public void AddComponent(GradeComponent component)
     {
-        Components.Add(component);
-    }
-    
-    public double CalculateCurrentGrade()
-    {
-        if (Components.Count == 0)
+        if (component == null)
         {
-            return 0;
+            throw new ArgumentNullException(nameof(component));
         }
-        
-        double totalWeight = Components.Sum(c => c.Weight.Value);
-        double weightedSum = Components.Sum(c => c.CurrentGrade.Value * c.Weight.Value);
 
-        return weightedSum / totalWeight;
+        Components.Add(component);
     }
 }

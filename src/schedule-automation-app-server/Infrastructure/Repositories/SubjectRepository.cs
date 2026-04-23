@@ -1,10 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+using schedule_automation_app_server.Application.Services.Interfaces;
 using schedule_automation_app_server.Domain.Entities;
 using schedule_automation_app_server.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace schedule_automation_app_server.Infrastructure.Repositories;
 
-public class SubjectRepository
+public class SubjectRepository : ISubjectRepository
 {
     private readonly AppDbContext _context;
 

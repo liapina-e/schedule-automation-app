@@ -46,3 +46,6 @@ packages/
 *.csproj.user
 .DS_Store
 **/.DS_Store
+**/bin/
+**/obj/
+*.zip
