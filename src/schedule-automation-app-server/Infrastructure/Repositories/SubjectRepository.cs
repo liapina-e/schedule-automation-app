@@ -33,4 +33,10 @@ public class SubjectRepository : ISubjectRepository
         await _context.Subjects.AddAsync(subject);
         await _context.SaveChangesAsync();
     }
+    
+    public async Task DeleteAsync(Subject subject)
+    {
+        _context.Subjects.Remove(subject);
+        await _context.SaveChangesAsync();
+    }
 }

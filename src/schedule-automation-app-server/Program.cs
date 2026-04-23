@@ -1,6 +1,9 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using schedule_automation_app_server.Application.Mappers;
 using schedule_automation_app_server.Application.Services.Implementation;
 using schedule_automation_app_server.Application.Services.Interfaces;
+using schedule_automation_app_server.Application.Validators;
 using schedule_automation_app_server.Infrastructure.Data;
 using schedule_automation_app_server.Infrastructure.Repositories;
 
@@ -15,8 +18,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowClient", policy =>
     {
         policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
@@ -25,6 +28,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<IGradeCalculationService, GradeCalculationService>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateSubjectRequestValidator>();
 
 WebApplication app = builder.Build();
 
