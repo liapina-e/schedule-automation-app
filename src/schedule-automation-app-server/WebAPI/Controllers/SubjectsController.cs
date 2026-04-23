@@ -1,8 +1,10 @@
+using FluentValidation;
+using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
 using schedule_automation_app_server.Application.DTOs;
+using schedule_automation_app_server.Application.Mappers;
 using schedule_automation_app_server.Application.Services.Interfaces;
 using schedule_automation_app_server.Domain.Entities;
-using schedule_automation_app_server.Domain.ValueObjects;
 
 namespace schedule_automation_app_server.WebAPI.Controllers;
 
@@ -12,11 +14,16 @@ public class SubjectsController : ControllerBase
 {
     private readonly ISubjectRepository _repository;
     private readonly IGradeCalculationService _calculationService;
+    private readonly IValidator<CreateSubjectRequest> _validator;
 
-    public SubjectsController(ISubjectRepository repository, IGradeCalculationService calculationService)
+    public SubjectsController(
+        ISubjectRepository repository,
+        IGradeCalculationService calculationService,
+        IValidator<CreateSubjectRequest> validator)
     {
         _repository = repository;
         _calculationService = calculationService;
+        _validator = validator;
     }
 
     [HttpGet]
@@ -24,15 +31,30 @@ public class SubjectsController : ControllerBase
     {
         List<Subject> subjects = await _repository.GetAllAsync();
 
-        var response = subjects.Select(s => new
-        {
-            s.Id,
-            s.Name,
-            s.TargetGrade,
-            CurrentGrade = Math.Round(_calculationService.CalculateCurrentGrade(s), 2)
-        });
+        List<SubjectListItemResponse> response = subjects
+            .Select(s => SubjectMapper.ToListItemResponse(s, _calculationService.CalculateCurrentGrade(s)))
+            .ToList();
 
         return Ok(response);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            return BadRequest(new { error = "Неверный ID предмета." });
+        }
+
+        Subject? subject = await _repository.GetByIdAsync(id);
+
+        if (subject == null)
+        {
+            return NotFound(new { error = $"Предмет с ID {id} не найден." });
+        }
+
+        OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
+        return Ok(SubjectMapper.ToResponse(subject, plan));
     }
 
     [HttpPost]
@@ -43,65 +65,21 @@ public class SubjectsController : ControllerBase
             return BadRequest(new { error = "Тело запроса не может быть пустым." });
         }
 
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            return BadRequest(new { error = "Название предмета обязательно." });
-        }
+        ValidationResult validation = await _validator.ValidateAsync(request);
 
-        if (request.Components == null || request.Components.Count == 0)
+        if (!validation.IsValid)
         {
-            return BadRequest(new { error = "Нужен хотя бы один компонент формулы." });
-        }
-
-        double totalWeight = request.Components.Sum(c => c.Weight);
-        if (Math.Abs(totalWeight - 100) > 0.01)
-        {
-            return BadRequest(new { error = $"Сумма весов должна быть 100%. Сейчас: {totalWeight:F1}%." });
+            List<string> errors = validation.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new { errors });
         }
 
         try
         {
-            Subject subject = new Subject(request.Name, request.TargetGrade);
-
-            foreach (ComponentDto dto in request.Components)
-            {
-                GradeComponent component = new GradeComponent(
-                    dto.Name,
-                    new Weight(dto.Weight),
-                    new Complexity(dto.Complexity),
-                    new Grade(dto.CurrentGrade)
-                )
-                {
-                    IsBlocking = dto.IsBlocking,
-                    MinimumGrade = dto.MinimumGrade
-                };
-
-                subject.AddComponent(component);
-            }
-
+            Subject subject = SubjectMapper.ToDomain(request);
             await _repository.AddAsync(subject);
 
             OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
-
-            SubjectResponse response = new SubjectResponse
-            {
-                Id = subject.Id,
-                Name = subject.Name,
-                CurrentGrade = Math.Round(plan.CurrentGrade, 2),
-                TargetGrade = subject.TargetGrade,
-                IsAchievable = plan.IsAchievable,
-                Recommendation = plan.Recommendation,
-                OptimalPlan = plan.Items.Select(i => new OptimizationItemDto
-                {
-                    ComponentName = i.ComponentName,
-                    CurrentGrade = Math.Round(i.CurrentGrade, 2),
-                    RequiredGrade = i.RequiredGrade,
-                    Priority = i.Priority,
-                    Reason = i.Reason
-                }).ToList()
-            };
-
-            return Ok(response);
+            return Ok(SubjectMapper.ToResponse(subject, plan));
         }
         catch (ArgumentException ex)
         {
@@ -151,5 +129,24 @@ public class SubjectsController : ControllerBase
         {
             return StatusCode(500, new { error = "Ошибка при расчёте плана.", details = ex.Message });
         }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            return BadRequest(new { error = "Неверный ID предмета." });
+        }
+
+        Subject? subject = await _repository.GetByIdAsync(id);
+
+        if (subject == null)
+        {
+            return NotFound(new { error = $"Предмет с ID {id} не найден." });
+        }
+
+        await _repository.DeleteAsync(subject);
+        return NoContent();
     }
 }

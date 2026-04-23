@@ -46,7 +46,6 @@ public class GradeCalculationService : IGradeCalculationService
 
         double currentGrade = CalculateCurrentGrade(subject);
         double gap = Math.Max(0, subject.TargetGrade - currentGrade);
-
         double maxAchievable = CalculateMaxAchievableGrade(subject);
 
         if (maxAchievable < subject.TargetGrade - 1e-6)
@@ -88,15 +87,33 @@ public class GradeCalculationService : IGradeCalculationService
 
     private List<OptimizationItem> BuildPlan(Subject subject)
     {
-        List<GradeComponent> improvable = subject.Components
-            .Where(c => c.CurrentGrade.Value < 10.0 - 1e-6)
-            .ToList();
+        List<GradeComponent> improvable = GetImprovableComponents(subject);
 
         if (improvable.Count == 0)
         {
             return new List<OptimizationItem>();
         }
 
+        SolverInput input = PrepareInputData(subject, improvable);
+        double[] optimalGrades = _solver.Solve(
+            input.CurrentGrades,
+            input.Weights,
+            input.Complexities,
+            input.TargetWeightedSum
+        );
+
+        return MapResultToItems(improvable, optimalGrades);
+    }
+
+    private List<GradeComponent> GetImprovableComponents(Subject subject)
+    {
+        return subject.Components
+            .Where(c => c.CurrentGrade.Value < 10.0 - 1e-6)
+            .ToList();
+    }
+
+    private SolverInput PrepareInputData(Subject subject, List<GradeComponent> improvable)
+    {
         double[] currentGrades = improvable.Select(c => c.CurrentGrade.Value).ToArray();
         double[] weights = improvable.Select(c => c.Weight.AsDecimal()).ToArray();
         int[] complexities = improvable.Select(c => c.Complexity.Value).ToArray();
@@ -108,8 +125,11 @@ public class GradeCalculationService : IGradeCalculationService
         double totalWeight = subject.Components.Sum(c => c.Weight.AsDecimal());
         double targetWeightedSum = subject.TargetGrade * totalWeight - lockedSum;
 
-        double[] optimalGrades = _solver.Solve(currentGrades, weights, complexities, targetWeightedSum);
+        return new SolverInput(currentGrades, weights, complexities, targetWeightedSum);
+    }
 
+    private List<OptimizationItem> MapResultToItems(List<GradeComponent> improvable, double[] optimalGrades)
+    {
         List<OptimizationItem> items = new List<OptimizationItem>();
         int priority = 1;
 
@@ -122,7 +142,7 @@ public class GradeCalculationService : IGradeCalculationService
             {
                 continue;
             }
-            
+
             double requiredGrade = Math.Ceiling(needed * 100) / 100.0;
             requiredGrade = Math.Min(requiredGrade, 10.0);
 

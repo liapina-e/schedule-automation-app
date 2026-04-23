@@ -7,4 +7,5 @@ public interface ISubjectRepository
     Task<List<Subject>> GetAllAsync();
     Task<Subject?> GetByIdAsync(Guid id);
     Task AddAsync(Subject subject);
+    Task DeleteAsync(Subject subject);
 }
