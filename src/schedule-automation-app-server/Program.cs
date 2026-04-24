@@ -1,36 +1,44 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using schedule_automation_app_server.Application.Mappers;
 using schedule_automation_app_server.Application.Services.Implementation;
 using schedule_automation_app_server.Application.Services.Interfaces;
-using schedule_automation_app_server.Application.Validators;
 using schedule_automation_app_server.Infrastructure.Data;
 using schedule_automation_app_server.Infrastructure.Repositories;
+using schedule_automation_app_server.WebAPI.Middleware;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+string[] allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowClient", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                          ?? "Data Source=schedule.db";
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=schedule.db"));
+    options.UseSqlite(connectionString));
 
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<IGradeCalculationService, GradeCalculationService>();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateSubjectRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 WebApplication app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

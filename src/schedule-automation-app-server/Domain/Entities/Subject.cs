@@ -8,6 +8,7 @@ public class Subject : BaseEntity
     public int TargetGrade { get; private set; }
     public List<GradeComponent> Components { get; private set; } = new();
     public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
 
     private Subject() { }
 
@@ -26,6 +27,7 @@ public class Subject : BaseEntity
         Name = name;
         TargetGrade = targetGrade;
         CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void AddComponent(GradeComponent component)
@@ -36,5 +38,22 @@ public class Subject : BaseEntity
         }
 
         Components.Add(component);
+    }
+
+    public void Update(string name, int targetGrade)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Название предмета не может быть пустым.");
+        }
+
+        if (targetGrade < 4 || targetGrade > 10)
+        {
+            throw new ArgumentException("Целевая оценка должна быть от 4 до 10.");
+        }
+
+        Name = name;
+        TargetGrade = targetGrade;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

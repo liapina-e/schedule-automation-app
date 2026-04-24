@@ -1,6 +1,5 @@
 using schedule_automation_app_server.Application.DTOs;
 using schedule_automation_app_server.Domain.Entities;
-using schedule_automation_app_server.Domain.ValueObjects;
 
 namespace schedule_automation_app_server.Application.Mappers;
 
@@ -12,18 +11,7 @@ public static class SubjectMapper
 
         foreach (ComponentDto dto in request.Components)
         {
-            GradeComponent component = new GradeComponent(
-                dto.Name,
-                new Weight(dto.Weight),
-                new Complexity(dto.Complexity),
-                new Grade(dto.CurrentGrade)
-            )
-            {
-                IsBlocking = dto.IsBlocking,
-                MinimumGrade = dto.MinimumGrade
-            };
-
-            subject.AddComponent(component);
+            subject.AddComponent(MapComponent(dto));
         }
 
         return subject;
@@ -52,6 +40,20 @@ public static class SubjectMapper
             TargetGrade = subject.TargetGrade,
             CurrentGrade = Math.Round(currentGrade, 2),
             ComponentCount = subject.Components.Count
+        };
+    }
+
+    private static GradeComponent MapComponent(ComponentDto dto)
+    {
+        return new GradeComponent(
+            dto.Name,
+            dto.Weight,
+            dto.Complexity,
+            dto.CurrentGrade
+        )
+        {
+            IsBlocking = dto.IsBlocking,
+            MinimumGrade = dto.MinimumGrade
         };
     }
 
