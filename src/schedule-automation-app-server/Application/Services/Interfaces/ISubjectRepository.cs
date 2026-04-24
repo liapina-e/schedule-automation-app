@@ -1,3 +1,4 @@
+using schedule_automation_app_server.Application.DTOs;
 using schedule_automation_app_server.Domain.Entities;
 
 namespace schedule_automation_app_server.Application.Services.Interfaces;
@@ -8,4 +9,5 @@ public interface ISubjectRepository
     Task<Subject?> GetByIdAsync(Guid id);
     Task AddAsync(Subject subject);
     Task DeleteAsync(Subject subject);
+    Task UpdateAsync(Guid id, UpdateSubjectRequest request);
 }

@@ -14,53 +14,27 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Subject>(entity =>
         {
             entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(100);
-
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.TargetGrade).IsRequired();
             entity.Property(e => e.CreatedAt).IsRequired();
-
-            entity.OwnsMany(e => e.Components, component =>
-            {
-                component.WithOwner().HasForeignKey("SubjectId");
-                component.HasKey(c => c.Id);
-
-                component.Property(c => c.Name)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                component.OwnsOne(c => c.Weight, w =>
-                {
-                    w.Property(p => p.Value)
-                        .HasColumnName("Weight")
-                        .HasPrecision(5, 2)
-                        .IsRequired();
-                });
-
-                component.OwnsOne(c => c.Complexity, c =>
-                {
-                    c.Property(p => p.Value)
-                        .HasColumnName("Complexity")
-                        .IsRequired();
-                });
-
-                component.OwnsOne(c => c.CurrentGrade, g =>
-                {
-                    g.Property(p => p.Value)
-                        .HasColumnName("CurrentGrade")
-                        .HasPrecision(4, 2)
-                        .IsRequired();
-                });
-
-                component.Property(c => c.IsBlocking).HasDefaultValue(false);
-                component.Property(c => c.MinimumGrade)
-                    .HasPrecision(4, 2)
-                    .HasDefaultValue(0);
-            });
-
+            entity.Property(e => e.UpdatedAt).IsRequired();
             entity.HasIndex(e => e.Name);
+
+            entity.HasMany(e => e.Components)
+                .WithOne()
+                .HasForeignKey(c => c.SubjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GradeComponent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Weight).HasPrecision(5, 2).IsRequired();
+            entity.Property(e => e.Complexity).IsRequired();
+            entity.Property(e => e.CurrentGrade).HasPrecision(4, 2).IsRequired();
+            entity.Property(e => e.IsBlocking).HasDefaultValue(false);
+            entity.Property(e => e.MinimumGrade).HasPrecision(4, 2).HasDefaultValue(0.0);
         });
     }
 }

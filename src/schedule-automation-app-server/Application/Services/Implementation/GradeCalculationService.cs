@@ -24,17 +24,14 @@ public class GradeCalculationService : IGradeCalculationService
             return 0;
         }
 
-        double totalWeight = subject.Components.Sum(c => c.Weight.AsDecimal());
+        double totalWeight = subject.Components.Sum(c => c.WeightAsDecimal());
 
         if (totalWeight < 1e-9)
         {
             return 0;
         }
 
-        double weightedSum = subject.Components
-            .Sum(c => c.CurrentGrade.Value * c.Weight.AsDecimal());
-
-        return weightedSum / totalWeight;
+        return subject.Components.Sum(c => c.CurrentGrade * c.WeightAsDecimal()) / totalWeight;
     }
 
     public OptimizationPlan CalculateOptimizationPlan(Subject subject)
@@ -108,21 +105,21 @@ public class GradeCalculationService : IGradeCalculationService
     private List<GradeComponent> GetImprovableComponents(Subject subject)
     {
         return subject.Components
-            .Where(c => c.CurrentGrade.Value < 10.0 - 1e-6)
+            .Where(c => c.CurrentGrade < 10.0 - 1e-6)
             .ToList();
     }
 
     private SolverInput PrepareInputData(Subject subject, List<GradeComponent> improvable)
     {
-        double[] currentGrades = improvable.Select(c => c.CurrentGrade.Value).ToArray();
-        double[] weights = improvable.Select(c => c.Weight.AsDecimal()).ToArray();
-        int[] complexities = improvable.Select(c => c.Complexity.Value).ToArray();
+        double[] currentGrades = improvable.Select(c => c.CurrentGrade).ToArray();
+        double[] weights = improvable.Select(c => c.WeightAsDecimal()).ToArray();
+        int[] complexities = improvable.Select(c => c.Complexity).ToArray();
 
         double lockedSum = subject.Components
             .Except(improvable)
-            .Sum(c => c.CurrentGrade.Value * c.Weight.AsDecimal());
+            .Sum(c => c.CurrentGrade * c.WeightAsDecimal());
 
-        double totalWeight = subject.Components.Sum(c => c.Weight.AsDecimal());
+        double totalWeight = subject.Components.Sum(c => c.WeightAsDecimal());
         double targetWeightedSum = subject.TargetGrade * totalWeight - lockedSum;
 
         return new SolverInput(currentGrades, weights, complexities, targetWeightedSum);
@@ -138,17 +135,15 @@ public class GradeCalculationService : IGradeCalculationService
             GradeComponent component = improvable[i];
             double needed = optimalGrades[i];
 
-            if (needed <= component.CurrentGrade.Value + 1e-6)
+            if (needed <= component.CurrentGrade + 1e-6)
             {
                 continue;
             }
 
-            double requiredGrade = Math.Ceiling(needed * 100) / 100.0;
-            requiredGrade = Math.Min(requiredGrade, 10.0);
-
-            double costPerUnit = (double)component.Complexity.Value / component.Weight.AsDecimal();
+            double requiredGrade = Math.Min(Math.Ceiling(needed * 100) / 100.0, 10.0);
+            double costPerUnit = (double)component.Complexity / component.WeightAsDecimal();
             string reason = $"Стоимость усилий: {costPerUnit:F1} " +
-                            $"(вес {component.Weight.Value}%, сложность {component.Complexity.Value})";
+                            $"(вес {component.Weight}%, сложность {component.Complexity})";
 
             items.Add(new OptimizationItem(component, requiredGrade, priority, reason));
             priority++;
@@ -159,14 +154,14 @@ public class GradeCalculationService : IGradeCalculationService
 
     private double CalculateMaxAchievableGrade(Subject subject)
     {
-        double totalWeight = subject.Components.Sum(c => c.Weight.AsDecimal());
+        double totalWeight = subject.Components.Sum(c => c.WeightAsDecimal());
 
         if (totalWeight < 1e-9)
         {
             return 0;
         }
 
-        return subject.Components.Sum(c => 10.0 * c.Weight.AsDecimal()) / totalWeight;
+        return subject.Components.Sum(c => 10.0 * c.WeightAsDecimal()) / totalWeight;
     }
 
     private string BuildRecommendation(List<OptimizationItem> items)

@@ -14,16 +14,19 @@ public class SubjectsController : ControllerBase
 {
     private readonly ISubjectRepository _repository;
     private readonly IGradeCalculationService _calculationService;
-    private readonly IValidator<CreateSubjectRequest> _validator;
+    private readonly IValidator<CreateSubjectRequest> _createValidator;
+    private readonly IValidator<UpdateSubjectRequest> _updateValidator;
 
     public SubjectsController(
         ISubjectRepository repository,
         IGradeCalculationService calculationService,
-        IValidator<CreateSubjectRequest> validator)
+        IValidator<CreateSubjectRequest> createValidator,
+        IValidator<UpdateSubjectRequest> updateValidator)
     {
         _repository = repository;
         _calculationService = calculationService;
-        _validator = validator;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
     }
 
     [HttpGet]
@@ -65,7 +68,7 @@ public class SubjectsController : ControllerBase
             return BadRequest(new { error = "Тело запроса не может быть пустым." });
         }
 
-        ValidationResult validation = await _validator.ValidateAsync(request);
+        ValidationResult validation = await _createValidator.ValidateAsync(request);
 
         if (!validation.IsValid)
         {
@@ -80,6 +83,48 @@ public class SubjectsController : ControllerBase
 
             OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
             return Ok(SubjectMapper.ToResponse(subject, plan));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSubjectRequest request)
+    {
+        if (id == Guid.Empty)
+        {
+            return BadRequest(new { error = "Неверный ID предмета." });
+        }
+
+        if (request == null)
+        {
+            return BadRequest(new { error = "Тело запроса не может быть пустым." });
+        }
+
+        ValidationResult validation = await _updateValidator.ValidateAsync(request);
+
+        if (!validation.IsValid)
+        {
+            List<string> errors = validation.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new { errors });
+        }
+
+        Subject? subject = await _repository.GetByIdAsync(id);
+
+        if (subject == null)
+        {
+            return NotFound(new { error = $"Предмет с ID {id} не найден." });
+        }
+
+        try
+        {
+            await _repository.UpdateAsync(id, request);
+
+            Subject? updated = await _repository.GetByIdAsync(id);
+            OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(updated!);
+            return Ok(SubjectMapper.ToResponse(updated!, plan));
         }
         catch (ArgumentException ex)
         {
@@ -102,33 +147,26 @@ public class SubjectsController : ControllerBase
             return NotFound(new { error = $"Предмет с ID {id} не найден." });
         }
 
-        try
-        {
-            OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
+        OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
 
-            return Ok(new
-            {
-                SubjectId = subject.Id,
-                SubjectName = subject.Name,
-                TargetGrade = subject.TargetGrade,
-                CurrentGrade = Math.Round(plan.CurrentGrade, 2),
-                NecessaryPoints = Math.Round(plan.NecessaryPoints, 2),
-                IsAchievable = plan.IsAchievable,
-                Recommendation = plan.Recommendation,
-                Plan = plan.Items.Select(i => new
-                {
-                    i.ComponentName,
-                    CurrentGrade = Math.Round(i.CurrentGrade, 2),
-                    i.RequiredGrade,
-                    i.Priority,
-                    i.Reason
-                })
-            });
-        }
-        catch (Exception ex)
+        return Ok(new
         {
-            return StatusCode(500, new { error = "Ошибка при расчёте плана.", details = ex.Message });
-        }
+            SubjectId = subject.Id,
+            SubjectName = subject.Name,
+            TargetGrade = subject.TargetGrade,
+            CurrentGrade = Math.Round(plan.CurrentGrade, 2),
+            NecessaryPoints = Math.Round(plan.NecessaryPoints, 2),
+            IsAchievable = plan.IsAchievable,
+            Recommendation = plan.Recommendation,
+            Plan = plan.Items.Select(i => new
+            {
+                i.ComponentName,
+                CurrentGrade = Math.Round(i.CurrentGrade, 2),
+                i.RequiredGrade,
+                i.Priority,
+                i.Reason
+            })
+        });
     }
 
     [HttpDelete("{id}")]

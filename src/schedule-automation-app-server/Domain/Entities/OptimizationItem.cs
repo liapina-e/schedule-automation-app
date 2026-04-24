@@ -20,23 +20,11 @@ public class OptimizationItem : BaseEntity
             throw new ArgumentNullException(nameof(component));
         }
 
-        if (requiredGrade < 0 || requiredGrade > 10)
-        {
-            throw new ArgumentException("Требуемая оценка должна быть от 0 до 10.");
-        }
-
-        if (priority <= 0)
-        {
-            throw new ArgumentException("Приоритет должен быть положительным числом.");
-        }
-
         ComponentId = component.Id;
         ComponentName = component.Name;
-        CurrentGrade = component.CurrentGrade.Value;
+        CurrentGrade = component.CurrentGrade;
         RequiredGrade = requiredGrade;
         Priority = priority;
-        Reason = reason ?? throw new ArgumentNullException(nameof(reason));
+        Reason = reason;
     }
-
-    public bool IsImprovementNeeded() => RequiredGrade > CurrentGrade;
 }
