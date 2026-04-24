@@ -20,14 +20,19 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowClient", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        if (allowedOrigins.Length == 0)
+        {
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        }
+        else
+        {
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+        }
     });
 });
 
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                          ?? "Data Source=schedule.db";
+    ?? "Data Source=schedule.db";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
@@ -37,6 +42,13 @@ builder.Services.AddScoped<IGradeCalculationService, GradeCalculationService>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 WebApplication app = builder.Build();
+
+ILogger<Program> logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+if (allowedOrigins.Length == 0)
+{
+    logger.LogWarning("CORS: список разрешённых origins пуст — разрешены все origins. Настройте Cors:AllowedOrigins в appsettings.json для продакшена.");
+}
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 

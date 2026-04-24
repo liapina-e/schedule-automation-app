@@ -7,11 +7,13 @@ public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
-
-    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+    private readonly IWebHostEnvironment _environment;
+    
+    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger, IWebHostEnvironment environment)
     {
         _next = next;
         _logger = logger;
+        _environment = environment;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -22,7 +24,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Ошибка валидации: {Message}", ex.Message);
+            _logger.LogWarning(ex, "Ошибка валидации домена: {Message}", ex.Message);
             await WriteErrorResponse(context, HttpStatusCode.BadRequest, ex.Message);
         }
         catch (KeyNotFoundException ex)
@@ -33,7 +35,9 @@ public class ExceptionHandlingMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Необработанное исключение");
-            await WriteErrorResponse(context, HttpStatusCode.InternalServerError, "Внутренняя ошибка сервера.");
+            string message = _environment.IsDevelopment() ? ex.Message : "Внутренняя ошибка сервера.";
+
+            await WriteErrorResponse(context, HttpStatusCode.InternalServerError, message);
         }
     }
 
