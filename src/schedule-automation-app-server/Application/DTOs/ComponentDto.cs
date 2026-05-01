@@ -8,4 +8,5 @@ public class ComponentDto
     public double CurrentGrade { get; set; }
     public bool IsBlocking { get; set; }
     public double MinimumGrade { get; set; }
+    public bool IsGraded { get; set; }
 }

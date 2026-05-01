@@ -1,3 +1,4 @@
+using schedule_automation_app_server.Application.DTOs;
 using schedule_automation_app_server.Application.Services.Interfaces;
 using schedule_automation_app_server.Domain.Entities;
 
@@ -82,6 +83,73 @@ public class GradeCalculationService : IGradeCalculationService
         );
     }
 
+    public WhatIfResponse CalculateWhatIf(Subject subject, List<WhatIfComponentDto> hypotheticalGrades)
+    {
+        if (subject == null)
+        {
+            throw new ArgumentNullException(nameof(subject));
+        }
+
+        double currentGrade = CalculateCurrentGrade(subject);
+        double totalWeight = subject.Components.Sum(c => c.WeightAsDecimal());
+
+        if (totalWeight < 1e-9)
+        {
+            return new WhatIfResponse
+            {
+                CurrentGrade = currentGrade,
+                HypotheticalGrade = currentGrade,
+                TargetGrade = subject.TargetGrade,
+                WouldAchieveTarget = currentGrade >= subject.TargetGrade,
+                PointsRemaining = Math.Max(0, subject.TargetGrade - currentGrade)
+            };
+        }
+
+        double hypotheticalWeightedSum = 0;
+        List<WhatIfComponentResultDto> componentResults = new List<WhatIfComponentResultDto>();
+
+        foreach (GradeComponent component in subject.Components)
+        {
+            double gradeToUse = component.CurrentGrade;
+
+            if (!component.IsGraded)
+            {
+                WhatIfComponentDto? hypothesis = hypotheticalGrades
+                    .FirstOrDefault(h => h.ComponentName == component.Name);
+
+                if (hypothesis != null)
+                {
+                    gradeToUse = Math.Max(0, Math.Min(10, hypothesis.HypotheticalGrade));
+                }
+            }
+
+            double contribution = gradeToUse * component.WeightAsDecimal();
+            hypotheticalWeightedSum += contribution;
+
+            componentResults.Add(new WhatIfComponentResultDto
+            {
+                ComponentName = component.Name,
+                CurrentGrade = component.CurrentGrade,
+                HypotheticalGrade = gradeToUse,
+                IsGraded = component.IsGraded,
+                WeightedContribution = Math.Round(contribution, 3)
+            });
+        }
+
+        double hypotheticalGrade = Math.Round(hypotheticalWeightedSum / totalWeight, 2);
+        double pointsRemaining = Math.Max(0, subject.TargetGrade - hypotheticalGrade);
+
+        return new WhatIfResponse
+        {
+            CurrentGrade = Math.Round(currentGrade, 2),
+            HypotheticalGrade = hypotheticalGrade,
+            TargetGrade = subject.TargetGrade,
+            WouldAchieveTarget = hypotheticalGrade >= subject.TargetGrade - 1e-6,
+            PointsRemaining = Math.Round(pointsRemaining, 2),
+            Components = componentResults
+        };
+    }
+
     private List<OptimizationItem> BuildPlan(Subject subject)
     {
         List<GradeComponent> improvable = GetImprovableComponents(subject);
@@ -105,7 +173,7 @@ public class GradeCalculationService : IGradeCalculationService
     private List<GradeComponent> GetImprovableComponents(Subject subject)
     {
         return subject.Components
-            .Where(c => c.CurrentGrade < 10.0 - 1e-6)
+            .Where(c => c.CanBeImproved())
             .ToList();
     }
 
@@ -141,7 +209,7 @@ public class GradeCalculationService : IGradeCalculationService
             }
 
             double requiredGrade = Math.Min(Math.Ceiling(needed * 100) / 100.0, 10.0);
-            double costPerUnit = (double)component.Complexity / component.WeightAsDecimal();
+            double costPerUnit = component.Complexity / component.WeightAsDecimal();
             string reason = $"Стоимость усилий: {costPerUnit:F1} " +
                             $"(вес {component.Weight}%, сложность {component.Complexity})";
 
@@ -161,7 +229,11 @@ public class GradeCalculationService : IGradeCalculationService
             return 0;
         }
 
-        return subject.Components.Sum(c => 10.0 * c.WeightAsDecimal()) / totalWeight;
+        return subject.Components.Sum(c =>
+        {
+            double maxGrade = c.IsGraded ? c.CurrentGrade : 10.0;
+            return maxGrade * c.WeightAsDecimal();
+        }) / totalWeight;
     }
 
     private string BuildRecommendation(List<OptimizationItem> items)

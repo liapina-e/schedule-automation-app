@@ -11,11 +11,12 @@ public class GradeComponent : BaseEntity
     public double CurrentGrade { get; set; }
     public bool IsBlocking { get; set; }
     public double MinimumGrade { get; set; }
+    public bool IsGraded { get; set; }
     public Guid SubjectId { get; set; }
 
     private GradeComponent() { }
 
-    public GradeComponent(string name, double weight, int complexity, double currentGrade)
+    public GradeComponent(string name, double weight, int complexity, double currentGrade, bool isGraded = false)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -41,7 +42,10 @@ public class GradeComponent : BaseEntity
         Weight = weight;
         Complexity = complexity;
         CurrentGrade = currentGrade;
+        IsGraded = isGraded;
     }
 
     public double WeightAsDecimal() => Weight / 100.0;
+
+    public bool CanBeImproved() => !IsGraded && CurrentGrade < 10.0 - 1e-6;
 }

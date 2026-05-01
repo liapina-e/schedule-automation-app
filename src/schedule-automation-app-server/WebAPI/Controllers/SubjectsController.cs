@@ -132,6 +132,30 @@ public class SubjectsController : ControllerBase
         }
     }
 
+    [HttpPost("{id}/what-if")]
+    public async Task<IActionResult> WhatIf(Guid id, [FromBody] List<WhatIfComponentDto> hypotheticalGrades)
+    {
+        if (id == Guid.Empty)
+        {
+            return BadRequest(new { error = "Неверный ID предмета." });
+        }
+
+        if (hypotheticalGrades == null || hypotheticalGrades.Count == 0)
+        {
+            return BadRequest(new { error = "Нужно передать хотя бы одну гипотетическую оценку." });
+        }
+
+        Subject? subject = await _repository.GetByIdAsync(id);
+
+        if (subject == null)
+        {
+            return NotFound(new { error = $"Предмет с ID {id} не найден." });
+        }
+
+        WhatIfResponse result = _calculationService.CalculateWhatIf(subject, hypotheticalGrades);
+        return Ok(result);
+    }
+
     [HttpGet("{id}/optimization-plan")]
     public async Task<IActionResult> GetOptimizationPlan(Guid id)
     {
