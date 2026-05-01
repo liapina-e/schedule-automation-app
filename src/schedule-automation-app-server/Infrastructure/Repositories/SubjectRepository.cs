@@ -48,21 +48,31 @@ public class SubjectRepository : ISubjectRepository
 
         existing.Update(request.Name, request.TargetGrade);
 
-        _context.Set<GradeComponent>().RemoveRange(existing.Components);
+        await _context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM GradeComponent WHERE SubjectId = {0}",
+            id.ToString());
 
-        List<GradeComponent> newComponents = request.Components.Select(dto => new GradeComponent(
-            dto.Name,
-            dto.Weight,
-            dto.Complexity,
-            dto.CurrentGrade
-        )
+        existing.Components.Clear();
+
+        foreach (ComponentDto dto in request.Components)
         {
-            IsBlocking = dto.IsBlocking,
-            MinimumGrade = dto.MinimumGrade,
-            SubjectId = id
-        }).ToList();
+            GradeComponent component = new GradeComponent(
+                dto.Name,
+                dto.Weight,
+                dto.Complexity,
+                dto.CurrentGrade,
+                dto.IsGraded
+            )
+            {
+                IsBlocking = dto.IsBlocking,
+                MinimumGrade = dto.MinimumGrade,
+                SubjectId = id
+            };
 
-        await _context.Set<GradeComponent>().AddRangeAsync(newComponents);
+            existing.Components.Add(component);
+            _context.Entry(component).State = EntityState.Added;
+        }
+
         await _context.SaveChangesAsync();
     }
 

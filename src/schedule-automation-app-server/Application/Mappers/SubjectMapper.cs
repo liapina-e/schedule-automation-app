@@ -17,6 +17,20 @@ public static class SubjectMapper
         return subject;
     }
 
+    public static void UpdateDomain(Subject subject, UpdateSubjectRequest request)
+    {
+        List<GradeComponent> components = request.Components
+            .Select(dto => MapComponent(dto))
+            .ToList();
+
+        subject.Update(request.Name, request.TargetGrade);
+
+        foreach (GradeComponent component in components)
+        {
+            subject.AddComponent(component);
+        }
+    }
+
     public static SubjectResponse ToResponse(Subject subject, OptimizationPlan plan)
     {
         return new SubjectResponse
@@ -49,7 +63,8 @@ public static class SubjectMapper
             dto.Name,
             dto.Weight,
             dto.Complexity,
-            dto.CurrentGrade
+            dto.CurrentGrade,
+            dto.IsGraded
         )
         {
             IsBlocking = dto.IsBlocking,

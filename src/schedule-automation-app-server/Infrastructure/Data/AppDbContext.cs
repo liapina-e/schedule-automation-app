@@ -34,6 +34,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Complexity).IsRequired();
             entity.Property(e => e.CurrentGrade).HasPrecision(4, 2).IsRequired();
             entity.Property(e => e.IsBlocking).HasDefaultValue(false);
+            entity.Property(e => e.IsGraded).HasDefaultValue(false);
             entity.Property(e => e.MinimumGrade).HasPrecision(4, 2).HasDefaultValue(0.0);
         });
     }
