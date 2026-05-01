@@ -91,20 +91,35 @@
                                         CornerRadius="6"
                                         Padding="12"
                                         Margin="0,0,0,6">
-                                    <Grid RowDefinitions="Auto,Auto">
+                                    <Grid RowDefinitions="Auto,Auto,Auto">
 
                                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                                             <TextBlock Grid.Column="0"
-                                                       Text="{Binding Name}"
+                                                       Text="{Binding ComponentName}"
                                                        FontWeight="SemiBold"/>
                                             <TextBlock Grid.Column="1"
-                                                       Text="{Binding CurrentGrade, StringFormat={}{0:F1}}"
+                                                       Text="{Binding RequiredGrade, StringFormat={}{0:F2}}"
                                                        Foreground="#1976D2"
                                                        FontWeight="Bold"/>
                                         </Grid>
 
-                                        <ProgressBar Grid.Row="1"
-                                                     Value="{Binding CurrentGrade}"
+                                        <StackPanel Grid.Row="1"
+                                                    Orientation="Horizontal"
+                                                    Spacing="8"
+                                                    Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding CurrentGrade, StringFormat=Сейчас: {0:F2}}"
+                                                       Foreground="#666"
+                                                       FontSize="12"/>
+                                            <TextBlock Text="→"
+                                                       Foreground="#999"
+                                                       FontSize="12"/>
+                                            <TextBlock Text="{Binding RequiredGrade, StringFormat=Нужно: {0:F2}}"
+                                                       Foreground="#1976D2"
+                                                       FontSize="12"/>
+                                        </StackPanel>
+
+                                        <ProgressBar Grid.Row="2"
+                                                     Value="{Binding RequiredGrade}"
                                                      Minimum="0"
                                                      Maximum="10"
                                                      Height="6"

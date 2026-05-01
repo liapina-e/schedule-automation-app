@@ -50,6 +50,7 @@ public class MainViewModel : ViewModelBase
                 }
                 
                 OnPropertyChanged(nameof(CurrentFormula));
+                OnPropertyChanged(nameof(CanCalculatePlan));
                 UpdateStatusMessage();
                 RaiseCanExecuteForCommands();
             }
@@ -215,29 +216,24 @@ public class MainViewModel : ViewModelBase
         IsLoading = true;
         StatusMessage = "Считаем план...";
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        OnPropertyChanged(nameof(CanCalculatePlan));
 
-        // убрать заглушку когда сервер будет готов
-        await Task.Delay(500);
-
-        CurrentPlan = new PlanResponseDto(
-            Id: SelectedSubject.Id,
-            Name: SelectedSubject.Name,
-            CurrentGrade: SelectedSubject.Formula.Sum(c => c.CurrentGrade * c.Weight / 100),
-            TargetGrade: SelectedSubject.TargetGrade,
-            OptimalPlan: SelectedSubject.Formula
-                .OrderByDescending(c => c.Weight / c.Complexity)
-                .Select(c => new ComponentRequestDto(
-                    Name: c.Name,
-                    Weight: c.Weight,
-                    Complexity: c.Complexity,
-                    CurrentGrade: c.CurrentGrade,
-                    IsBlocking: false,
-                    MinimumGrade: 0
-                )).ToList()
-        );
+        PlanResponseDto? plan = await _apiService.CalculatePlanAsync(SelectedSubject);
 
         IsLoading = false;
-        StatusMessage = $"План рассчитан. Текущая оценка: {CurrentPlan.CurrentGrade:F1}";
+
+        if (plan == null)
+        {
+            ServerStatus = "Сервер недоступен. Убедитесь что сервер запущен на localhost:5284.";
+            CurrentPlan = null;
+        }
+        else
+        {
+            CurrentPlan = plan;
+            ServerStatus = $"План рассчитан. Текущая оценка: {plan.CurrentGrade:F2}";
+            StatusMessage = $"План для предмета \"{SelectedSubject.Name}\" готов";
+        }
+
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         OnPropertyChanged(nameof(CanCalculatePlan));
     }
@@ -356,6 +352,7 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalWeightMessage));
         OnPropertyChanged(nameof(IsFormulaValid));
         OnPropertyChanged(nameof(FormulaStatusColor));
+        (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         SaveSubjectsAsync();
     }
 
