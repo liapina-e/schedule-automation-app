@@ -12,6 +12,7 @@ public class GradeComponent : INotifyPropertyChanged
     private double _weight;
     private int _complexity;
     private double _currentGrade;
+    private bool _isGraded;
  
     public event PropertyChangedEventHandler PropertyChanged;
  
@@ -44,6 +45,12 @@ public class GradeComponent : INotifyPropertyChanged
         get => _currentGrade;
         set => SetField(ref _currentGrade, value);
     }
+    
+    public bool IsGraded
+    {
+        get => _isGraded;
+        set => SetField(ref _isGraded, value);
+    }
  
     public GradeComponent()
     {
@@ -52,6 +59,7 @@ public class GradeComponent : INotifyPropertyChanged
         Weight = 20;
         Complexity = 5;
         CurrentGrade = 0;
+        IsGraded = false;
     }
  
     protected void OnPropertyChanged([CallerMemberName] string propertyName = null)

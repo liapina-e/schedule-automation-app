@@ -6,4 +6,5 @@ public record ComponentRequestDto(
     int Complexity,
     double CurrentGrade,
     bool IsBlocking,
-    double MinimumGrade);
+    double MinimumGrade,
+    bool IsGraded);

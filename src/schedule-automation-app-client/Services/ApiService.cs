@@ -39,7 +39,8 @@ public class ApiService : IApiService
                     Complexity: c.Complexity,
                     CurrentGrade: c.CurrentGrade,
                     IsBlocking: false,
-                    MinimumGrade: 0
+                    MinimumGrade: 0,
+                    IsGraded: c.IsGraded
                 )).ToList()
             );
 
