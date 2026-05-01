@@ -1,4 +1,5 @@
 using schedule_automation_app_server.Domain.Common;
+using schedule_automation_app_server.Domain.Exceptions;
 
 namespace schedule_automation_app_server.Domain.Entities;
 
@@ -16,12 +17,12 @@ public class Subject : BaseEntity
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new ArgumentException("Название предмета не может быть пустым.");
+            throw new DomainValidationException("Название предмета не может быть пустым.");
         }
 
         if (targetGrade < 4 || targetGrade > 10)
         {
-            throw new ArgumentException("Целевая оценка должна быть от 4 до 10.");
+            throw new DomainValidationException("Целевая оценка должна быть от 4 до 10.");
         }
 
         Name = name;
@@ -44,12 +45,12 @@ public class Subject : BaseEntity
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new ArgumentException("Название предмета не может быть пустым.");
+            throw new DomainValidationException("Название предмета не может быть пустым.");
         }
 
         if (targetGrade < 4 || targetGrade > 10)
         {
-            throw new ArgumentException("Целевая оценка должна быть от 4 до 10.");
+            throw new DomainValidationException("Целевая оценка должна быть от 4 до 10.");
         }
 
         Name = name;
