@@ -8,4 +8,5 @@ public record PlanResponseDto(
     string Name,
     double CurrentGrade,
     int TargetGrade,
-    List<ComponentRequestDto> OptimalPlan);
+    string Recommendation,
+    List<OptimizationItemDto> OptimalPlan);
