@@ -12,7 +12,6 @@ namespace schedule_automation_app_client.Services;
 public class ApiService : IApiService
 {
     private readonly HttpClient _httpClient;
-    private const string BaseUrl = "http://localhost:5284";
 
     private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
@@ -22,7 +21,7 @@ public class ApiService : IApiService
     public ApiService()
     {
         _httpClient = new HttpClient();
-        _httpClient.BaseAddress = new Uri(BaseUrl);
+        _httpClient.BaseAddress = new Uri(AppSettings.ServerBaseUrl);
         _httpClient.Timeout = TimeSpan.FromSeconds(10);
     }
 
@@ -45,11 +44,6 @@ public class ApiService : IApiService
             );
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/api/subjects", request);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
 
             string json = await response.Content.ReadAsStringAsync();
             PlanResponseDto? result = JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions);
