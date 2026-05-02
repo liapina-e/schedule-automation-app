@@ -12,6 +12,8 @@ public class SubjectDialogViewModel : ViewModelBase
     private string _nameError = string.Empty;
     private string _gradeError = string.Empty;
     private bool _isEditMode;
+    private bool _hasAutoGrade;
+    private decimal? _autoGradeMinScoreValue = 8;
 
     public string Name
     {
@@ -24,7 +26,6 @@ public class SubjectDialogViewModel : ViewModelBase
         }
     }
 
-    // NumericUpDown работает с decimal?, поэтому биндим именно его
     public decimal? TargetGradeValue
     {
         get => _targetGradeValue;
@@ -34,6 +35,18 @@ public class SubjectDialogViewModel : ViewModelBase
             ValidateGrade();
             (SaveCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
+    }
+
+    public bool HasAutoGrade
+    {
+        get => _hasAutoGrade;
+        set => SetField(ref _hasAutoGrade, value);
+    }
+
+    public decimal? AutoGradeMinScoreValue
+    {
+        get => _autoGradeMinScoreValue;
+        set => SetField(ref _autoGradeMinScoreValue, value);
     }
 
     public string NameError
@@ -78,6 +91,8 @@ public class SubjectDialogViewModel : ViewModelBase
         IsEditMode = true;
         Name = subject.Name;
         TargetGradeValue = (decimal)subject.TargetGrade;
+        HasAutoGrade = subject.HasAutoGrade;
+        AutoGradeMinScoreValue = (decimal)subject.AutoGradeMinScore;
     }
 
     private bool CanSave()
@@ -98,7 +113,11 @@ public class SubjectDialogViewModel : ViewModelBase
         Result = new Subject
         {
             Name = Name.Trim(),
-            TargetGrade = (int)TargetGradeValue!.Value
+            TargetGrade = (int)TargetGradeValue!.Value,
+            HasAutoGrade = HasAutoGrade,
+            AutoGradeMinScore = HasAutoGrade && AutoGradeMinScoreValue.HasValue
+                ? (double)AutoGradeMinScoreValue.Value
+                : 0
         };
 
         CloseRequested?.Invoke(true);
@@ -130,7 +149,7 @@ public class SubjectDialogViewModel : ViewModelBase
     {
         if (!TargetGradeValue.HasValue)
         {
-            GradeError = "Введите оценку от 4 до 10";
+            GradeError = "Введите оценку";
         }
         else if (TargetGradeValue.Value < 4)
         {

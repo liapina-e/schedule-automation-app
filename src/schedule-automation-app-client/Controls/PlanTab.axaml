@@ -213,10 +213,26 @@
                                                            FontSize="11"
                                                            FontStyle="Italic"
                                                            IsVisible="{Binding IsGraded}"/>
+                                                <TextBlock Text="блок."
+                                                           Foreground="#dc3545"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           IsVisible="{Binding IsBlocking}"/>
+                                                <TextBlock Text="авт."
+                                                           Foreground="#1976D2"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           IsVisible="{Binding IsAutoGrade}"/>
                                             </StackPanel>
-                                            <TextBlock Text="{Binding CurrentGrade, StringFormat=Текущая: {0:F1}}"
-                                                       Foreground="#666"
-                                                       FontSize="12"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding CurrentGrade, StringFormat=Текущая: {0:F1}}"
+                                                           Foreground="#666"
+                                                           FontSize="12"/>
+                                                <TextBlock Text="{Binding AutoGradeMinScore, StringFormat=| мин. для авт.: {0:F1}}"
+                                                           Foreground="#1976D2"
+                                                           FontSize="12"
+                                                           IsVisible="{Binding IsAutoGrade}"/>
+                                            </StackPanel>
                                         </StackPanel>
 
                                         <TextBlock Grid.Column="1"
@@ -238,6 +254,25 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <Border CornerRadius="6"
+                            Padding="10"
+                            Background="#fff3cd"
+                            IsVisible="{Binding WhatIf.IsBlockingConditionFailed}">
+                        <TextBlock Text="{Binding WhatIf.BlockingWarning}"
+                                   Foreground="#856404"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+
+                    <Border CornerRadius="6"
+                            Padding="10"
+                            Background="#cce5ff"
+                            IsVisible="{Binding WhatIf.HasAutoGradeComponents}">
+                        <TextBlock Text="{Binding WhatIf.AutoGradeStatus}"
+                                   Foreground="{Binding WhatIf.AutoGradeStatusColor}"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"/>
+                    </Border>
 
                     <Border CornerRadius="8"
                             Padding="15"

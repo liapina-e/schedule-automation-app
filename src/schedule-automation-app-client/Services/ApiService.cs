@@ -30,18 +30,20 @@ public class ApiService : IApiService
         try
         {
             SubjectRequestDto request = new SubjectRequestDto(
-                Name: subject.Name,
-                TargetGrade: subject.TargetGrade,
-                Components: subject.Formula.Select(c => new ComponentRequestDto(
-                    Name: c.Name,
-                    Weight: c.Weight,
-                    Complexity: c.Complexity,
-                    CurrentGrade: c.CurrentGrade,
-                    IsBlocking: false,
-                    MinimumGrade: 0,
-                    IsGraded: c.IsGraded
-                )).ToList()
-            );
+                    Name: subject.Name,
+                    TargetGrade: subject.TargetGrade,
+                    Components: subject.Formula.Select(c => new ComponentRequestDto(
+                        Name: c.Name,
+                        Weight: c.Weight,
+                        Complexity: c.Complexity,
+                        CurrentGrade: c.CurrentGrade,
+                        IsBlocking: c.IsBlocking,
+                        MinimumGrade: c.IsBlocking ? 4.0 : 0.0,
+                        IsGraded: c.IsGraded,
+                        IsAutoGrade: c.IsAutoGrade,
+                        AutoGradeMinScore: c.AutoGradeMinScore
+                    )).ToList()
+                );
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/api/subjects", request);
 

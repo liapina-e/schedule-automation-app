@@ -56,19 +56,31 @@
 
                 <DataGridTextColumn Header="Вес (%)"
                                     Binding="{Binding Weight}"
-                                    Width="90"/>
+                                    Width="80"/>
 
-                <DataGridTextColumn Header="Сложность (1-10)"
+                <DataGridTextColumn Header="Сложность"
                                     Binding="{Binding Complexity}"
-                                    Width="130"/>
+                                    Width="90"/>
 
                 <DataGridTextColumn Header="Текущая оценка"
                                     Binding="{Binding CurrentGrade}"
-                                    Width="130"/>
+                                    Width="120"/>
 
                 <DataGridCheckBoxColumn Header="Зафиксирована"
                                         Binding="{Binding IsGraded}"
-                                        Width="120"/>
+                                        Width="110"/>
+
+                <DataGridCheckBoxColumn Header="Блокирующий"
+                                        Binding="{Binding IsBlocking}"
+                                        Width="110"/>
+
+                <DataGridCheckBoxColumn Header="Автомат"
+                                        Binding="{Binding IsAutoGrade}"
+                                        Width="80"/>
+
+                <DataGridTextColumn Header="Мин. для автомата"
+                                    Binding="{Binding AutoGradeMinScore}"
+                                    Width="130"/>
 
             </DataGrid.Columns>
 
