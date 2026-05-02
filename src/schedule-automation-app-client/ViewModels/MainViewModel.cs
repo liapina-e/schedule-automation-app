@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -42,15 +44,25 @@ public class MainViewModel : ViewModelBase
             if (_selectedSubject?.Formula != null)
             {
                 _selectedSubject.Formula.CollectionChanged -= OnFormulaCollectionChanged;
+                foreach (var c in _selectedSubject.Formula)
+                {
+                    c.PropertyChanged -= OnComponentPropertyChanged;
+                }
             }
 
             if (SetField(ref _selectedSubject, value))
             {
                 CurrentPlan = null;
+                StatusMessage = string.Empty;
+                ServerStatus = string.Empty; 
 
                 if (value != null)
                 {
                     value.Formula.CollectionChanged += OnFormulaCollectionChanged;
+                    foreach (var c in value.Formula)
+                    {
+                        c.PropertyChanged += OnComponentPropertyChanged;
+                    }
                     WhatIf.LoadFromSubject(value);
                     OnPropertyChanged(nameof(WhatIf));
                 }
@@ -543,15 +555,30 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanCalculatePlan));
         OnPropertyChanged(nameof(CanSelectBlockingMinimum));
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        UpdateStatusMessage();
     }
     
-    private void OnFormulaCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    private void OnFormulaCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
     {
+        if (e.NewItems != null)
+        {
+            foreach (GradeComponent c in e.NewItems)
+                c.PropertyChanged += OnComponentPropertyChanged;
+        }
+        if (e.OldItems != null)
+        {
+            foreach (GradeComponent c in e.OldItems)
+                c.PropertyChanged -= OnComponentPropertyChanged;
+        }
+    
         RefreshFormulaStats();
         if (SelectedSubject != null)
-        {
             WhatIf.LoadFromSubject(SelectedSubject);
-        }
+    }
+    
+    private void OnComponentPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        RefreshFormulaStats();
     }
 
     private async Task SyncSubjectAsync()
@@ -568,30 +595,39 @@ public class MainViewModel : ViewModelBase
     {
         if (SelectedSubject == null)
         {
-            StatusMessage = "Предмет не выбран";
+            StatusMessage = "Выберите предмет или добавьте новый";
             return;
         }
 
-        string formulaInfo = string.Empty;
-        if (SelectedSubject.Formula != null && SelectedSubject.Formula.Any())
+        if (SelectedSubject.Formula.Count == 0)
         {
-            formulaInfo = $", {SelectedSubject.Formula.Count} компонентов";
+            StatusMessage = "Добавьте компоненты формулы во вкладке «Формула»";
+            return;
         }
 
-        string autoInfo = string.Empty;
-        if (SelectedSubject.HasAutoGrade)
-        {
-            double currentGrade = SelectedSubject.Formula != null && SelectedSubject.Formula.Any()
-                ? SelectedSubject.Formula.Sum(c => c.CurrentGrade * c.Weight / 100.0)
-                : 0;
+        GradeComponent invalidComponent = SelectedSubject.Formula.FirstOrDefault(c =>
+            c.CurrentGrade < 0 || c.CurrentGrade > 10 ||
+            c.Complexity < 1 || c.Complexity > 10 ||
+            c.Weight < 0 || c.Weight > 100);
 
-            autoInfo = currentGrade >= SelectedSubject.AutoGradeMinScore
-                ? " | Автомат: ✓"
-                : $" | Автомат: нужно {SelectedSubject.AutoGradeMinScore:F1}";
+        if (invalidComponent != null)
+        {
+            StatusMessage = $"Некорректные значения у компонента «{invalidComponent.Name}». " +
+                            "Проверьте оценку (0–10), сложность (1–10) и вес (0–100).";
+            return;
         }
 
-        StatusMessage = $"Выбран: {SelectedSubject.Name}{formulaInfo}{autoInfo}";
-        RefreshFormulaStats();
+        double totalWeight = SelectedSubject.Formula.Sum(c => c.Weight);
+        if (totalWeight != 100)
+        {
+            StatusMessage = $"Сумма весов: {totalWeight} из 100. " +
+                            (totalWeight < 100
+                                ? $"Добавьте ещё {100 - totalWeight}%."
+                                : $"Превышение на {totalWeight - 100}%.");
+            return;
+        }
+
+        StatusMessage = "Формула готова, нажмите «Рассчитать план»";
     }
 
     private void RaiseCanExecuteForCommands()
