@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using schedule_automation_app_server.Application.DTOs;
 using schedule_automation_app_server.Application.Services.Interfaces;
 using schedule_automation_app_server.Domain.Entities;
@@ -39,43 +40,73 @@ public class GradeCalculationService : IGradeCalculationService
 
     public OptimizationPlan CalculateOptimizationPlan(Subject subject)
     {
+        return CalculateOptimizationPlanForGrade(subject, subject.TargetGrade);
+    }
+
+    public OptimizationPlan CalculateOptimizationPlanForGrade(Subject subject, int targetGrade)
+    {
         if (subject == null)
         {
             throw new ArgumentNullException(nameof(subject));
         }
 
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
         double currentGrade = CalculateCurrentGrade(subject);
-        double gap = Math.Max(0, subject.TargetGrade - currentGrade);
+        double gap = Math.Max(0, targetGrade - currentGrade);
         double maxAchievable = CalculateMaxAchievableGrade(subject);
 
         _logger.LogInformation(
             "Расчёт плана для предмета '{Name}' (Id={Id}): текущая={Current:F2}, цель={Target}, максимум={Max:F2}",
-            subject.Name, subject.Id, currentGrade, subject.TargetGrade, maxAchievable);
+            subject.Name, subject.Id, currentGrade, targetGrade, maxAchievable);
 
-        if (maxAchievable < subject.TargetGrade - 1e-6)
+        OptimizationPlan result;
+
+        bool blockingFailed = subject.Components
+            .Any(c => c.IsBlocking && !c.CanBeImproved() && c.CurrentGrade < c.MinimumGrade);
+
+        if (blockingFailed)
         {
-            _logger.LogInformation(
-                "Предмет '{Name}': цель недостижима, максимум {Max:F2}",
-                subject.Name, maxAchievable);
+            GradeComponent failedComponent = subject.Components
+                .First(c => c.IsBlocking && !c.CanBeImproved() && c.CurrentGrade < c.MinimumGrade);
 
-            return new OptimizationPlan(
+            result = new OptimizationPlan(
                 subject: subject,
+                targetGrade: targetGrade,
                 currentGrade: currentGrade,
                 necessaryPoints: gap,
                 isAchievable: false,
                 items: new List<OptimizationItem>(),
-                recommendation: $"Цель недостижима. Максимально возможная оценка: {maxAchievable:F2}."
+                recommendation: $"Цель недостижима: блокирующий компонент «{failedComponent.Name}» " +
+                                $"зафиксирован на {failedComponent.CurrentGrade:F1}, " +
+                                $"а минимум — {failedComponent.MinimumGrade:F1}."
             );
         }
-
-        if (gap < 1e-9)
+        else if (maxAchievable < targetGrade - 1e-6)
         {
             _logger.LogInformation(
-                "Предмет '{Name}': цель уже достигнута, текущая оценка {Current:F2}",
-                subject.Name, currentGrade);
+                "Предмет '{Name}': цель {Target} недостижима, максимум {Max:F2}",
+                subject.Name, targetGrade, maxAchievable);
 
-            return new OptimizationPlan(
+            result = new OptimizationPlan(
                 subject: subject,
+                targetGrade: targetGrade,
+                currentGrade: currentGrade,
+                necessaryPoints: gap,
+                isAchievable: false,
+                items: new List<OptimizationItem>(),
+                recommendation: $"Цель {targetGrade} недостижима. Максимально возможная оценка: {maxAchievable:F2}."
+            );
+        }
+        else if (gap < 1e-9)
+        {
+            _logger.LogInformation(
+                "Предмет '{Name}': цель {Target} уже достигнута, текущая {Current:F2}",
+                subject.Name, targetGrade, currentGrade);
+
+            result = new OptimizationPlan(
+                subject: subject,
+                targetGrade: targetGrade,
                 currentGrade: currentGrade,
                 necessaryPoints: 0,
                 isAchievable: true,
@@ -83,22 +114,60 @@ public class GradeCalculationService : IGradeCalculationService
                 recommendation: "Текущих оценок уже достаточно для достижения цели."
             );
         }
+        else
+        {
+            List<OptimizationItem> items = BuildPlan(subject, targetGrade);
+            string recommendation = BuildRecommendation(items);
 
-        List<OptimizationItem> items = BuildPlan(subject);
-        string recommendation = BuildRecommendation(items);
+            _logger.LogInformation(
+                "Предмет '{Name}': план на {Target} рассчитан, {Count} компонентов к улучшению",
+                subject.Name, targetGrade, items.Count);
 
-        _logger.LogInformation(
-            "Предмет '{Name}': план рассчитан, {Count} компонентов к улучшению",
-            subject.Name, items.Count);
+            result = new OptimizationPlan(
+                subject: subject,
+                targetGrade: targetGrade,
+                currentGrade: currentGrade,
+                necessaryPoints: gap,
+                isAchievable: true,
+                items: items,
+                recommendation: recommendation
+            );
+        }
 
-        return new OptimizationPlan(
-            subject: subject,
-            currentGrade: currentGrade,
-            necessaryPoints: gap,
-            isAchievable: true,
-            items: items,
-            recommendation: recommendation
-        );
+        stopwatch.Stop();
+
+        if (stopwatch.ElapsedMilliseconds > 100)
+        {
+            _logger.LogWarning(
+                "Расчёт плана для предмета '{Name}' занял {Ms}мс — превышен порог 100мс",
+                subject.Name, stopwatch.ElapsedMilliseconds);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Расчёт для предмета '{Name}' завершён за {Ms}мс",
+                subject.Name, stopwatch.ElapsedMilliseconds);
+        }
+
+        return result;
+    }
+
+    public List<OptimizationPlan> CalculatePlansRange(Subject subject)
+    {
+        if (subject == null)
+        {
+            throw new ArgumentNullException(nameof(subject));
+        }
+
+        List<OptimizationPlan> plans = new List<OptimizationPlan>();
+
+        for (int grade = subject.TargetGrade; grade <= 10; grade++)
+        {
+            OptimizationPlan plan = CalculateOptimizationPlanForGrade(subject, grade);
+            plans.Add(plan);
+        }
+
+        return plans;
     }
 
     public WhatIfResponse CalculateWhatIf(Subject subject, List<WhatIfComponentDto> hypotheticalGrades)
@@ -173,7 +242,7 @@ public class GradeCalculationService : IGradeCalculationService
         };
     }
 
-    private List<OptimizationItem> BuildPlan(Subject subject)
+    private List<OptimizationItem> BuildPlan(Subject subject, int targetGrade)
     {
         List<GradeComponent> improvable = GetImprovableComponents(subject);
 
@@ -182,12 +251,15 @@ public class GradeCalculationService : IGradeCalculationService
             return new List<OptimizationItem>();
         }
 
-        SolverInput input = PrepareInputData(subject, improvable);
+        SolverInput input = PrepareInputData(subject, improvable, targetGrade);
+
         double[] optimalGrades = _solver.Solve(
             input.CurrentGrades,
             input.Weights,
             input.Complexities,
-            input.TargetWeightedSum
+            input.TargetWeightedSum,
+            input.IsBlocking,
+            input.MinimumGrades
         );
 
         return MapResultToItems(improvable, optimalGrades);
@@ -200,20 +272,22 @@ public class GradeCalculationService : IGradeCalculationService
             .ToList();
     }
 
-    private SolverInput PrepareInputData(Subject subject, List<GradeComponent> improvable)
+    private SolverInput PrepareInputData(Subject subject, List<GradeComponent> improvable, int targetGrade)
     {
         double[] currentGrades = improvable.Select(c => c.CurrentGrade).ToArray();
         double[] weights = improvable.Select(c => c.WeightAsDecimal()).ToArray();
         int[] complexities = improvable.Select(c => c.Complexity).ToArray();
+        bool[] isBlocking = improvable.Select(c => c.IsBlocking).ToArray();
+        double[] minimumGrades = improvable.Select(c => c.MinimumGrade).ToArray();
 
         double lockedSum = subject.Components
             .Except(improvable)
             .Sum(c => c.CurrentGrade * c.WeightAsDecimal());
 
         double totalWeight = subject.Components.Sum(c => c.WeightAsDecimal());
-        double targetWeightedSum = subject.TargetGrade * totalWeight - lockedSum;
+        double targetWeightedSum = targetGrade * totalWeight - lockedSum;
 
-        return new SolverInput(currentGrades, weights, complexities, targetWeightedSum);
+        return new SolverInput(currentGrades, weights, complexities, targetWeightedSum, isBlocking, minimumGrades);
     }
 
     private List<OptimizationItem> MapResultToItems(List<GradeComponent> improvable, double[] optimalGrades)
@@ -232,9 +306,18 @@ public class GradeCalculationService : IGradeCalculationService
             }
 
             double requiredGrade = Math.Min(Math.Ceiling(needed * 100) / 100.0, 10.0);
-            double costPerUnit = (double)component.Complexity / component.WeightAsDecimal();
-            string reason = $"Стоимость усилий: {costPerUnit:F1} " +
-                            $"(вес {component.Weight}%, сложность {component.Complexity})";
+            double costPerUnit = component.Complexity / component.WeightAsDecimal();
+
+            string reason;
+            if (component.IsBlocking && requiredGrade <= component.MinimumGrade + 1e-6)
+            {
+                reason = $"Блокирующий компонент — минимум {component.MinimumGrade:F1} " +
+                         $"(вес {component.Weight}%, сложность {component.Complexity})";
+            }
+            else
+            {
+                reason = $"Стоимость усилий: {costPerUnit:F1} " + $"(вес {component.Weight}%, сложность {component.Complexity})";
+            }
 
             items.Add(new OptimizationItem(component, requiredGrade, priority, reason));
             priority++;
@@ -254,8 +337,12 @@ public class GradeCalculationService : IGradeCalculationService
 
         return subject.Components.Sum(c =>
         {
-            double maxGrade = c.IsGraded ? c.CurrentGrade : 10.0;
-            return maxGrade * c.WeightAsDecimal();
+            if (c.IsGraded)
+            {
+                return c.CurrentGrade * c.WeightAsDecimal();
+            }
+
+            return 10.0 * c.WeightAsDecimal();
         }) / totalWeight;
     }
 

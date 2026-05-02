@@ -71,7 +71,8 @@ public class SubjectsController : ControllerBase
         }
 
         OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
-        SubjectResponse response = SubjectMapper.ToResponse(subject, plan);
+        List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(subject);
+        SubjectResponse response = SubjectMapper.ToResponse(subject, plan, plansRange);
 
         _cache.Set(cacheKey, response, CacheDuration);
 
@@ -100,7 +101,8 @@ public class SubjectsController : ControllerBase
             await _repository.AddAsync(subject);
 
             OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
-            SubjectResponse response = SubjectMapper.ToResponse(subject, plan);
+            List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(subject);
+            SubjectResponse response = SubjectMapper.ToResponse(subject, plan, plansRange);
 
             _cache.Set($"plan_{subject.Id}", response, CacheDuration);
             _cache.Remove(StatsCacheKey);
@@ -148,7 +150,8 @@ public class SubjectsController : ControllerBase
 
             Subject? updated = await _repository.GetByIdAsync(id);
             OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(updated!);
-            SubjectResponse response = SubjectMapper.ToResponse(updated!, plan);
+            List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(updated!);
+            SubjectResponse response = SubjectMapper.ToResponse(updated!, plan, plansRange);
 
             _cache.Set($"plan_{id}", response, CacheDuration);
 

@@ -12,6 +12,8 @@ public class GradeComponent : BaseEntity
     public bool IsBlocking { get; set; }
     public double MinimumGrade { get; set; }
     public bool IsGraded { get; set; }
+    public bool IsAutoGrade { get; set; }
+    public double AutoGradeMinScore { get; set; }
     public Guid SubjectId { get; set; }
 
     private GradeComponent() { }
@@ -48,4 +50,6 @@ public class GradeComponent : BaseEntity
     public double WeightAsDecimal() => Weight / 100.0;
 
     public bool CanBeImproved() => !IsGraded && CurrentGrade < 10.0 - 1e-6;
+
+    public bool IsBlockingConditionMet() => !IsBlocking || CurrentGrade >= MinimumGrade;
 }

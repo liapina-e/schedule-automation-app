@@ -66,6 +66,8 @@ public class SubjectRepository : ISubjectRepository
             {
                 IsBlocking = dto.IsBlocking,
                 MinimumGrade = dto.MinimumGrade,
+                IsAutoGrade = dto.IsAutoGrade,
+                AutoGradeMinScore = dto.AutoGradeMinScore,
                 SubjectId = id
             };
 

@@ -9,4 +9,5 @@ public class SubjectResponse
     public bool IsAchievable { get; set; }
     public string Recommendation { get; set; } = string.Empty;
     public List<OptimizationItemDto> OptimalPlan { get; set; } = new();
+    public List<GradePlanDto> PlansRange { get; set; } = new();
 }
