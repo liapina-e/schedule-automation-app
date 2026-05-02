@@ -11,6 +11,8 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IStatsService, StatsService>();
 
 string[] allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")

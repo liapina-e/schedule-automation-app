@@ -7,10 +7,12 @@ namespace schedule_automation_app_server.Application.Services.Implementation;
 public class GradeCalculationService : IGradeCalculationService
 {
     private readonly EffortMinimizationSolver _solver;
+    private readonly ILogger<GradeCalculationService> _logger;
 
-    public GradeCalculationService()
+    public GradeCalculationService(ILogger<GradeCalculationService> logger)
     {
         _solver = new EffortMinimizationSolver();
+        _logger = logger;
     }
 
     public double CalculateCurrentGrade(Subject subject)
@@ -46,8 +48,16 @@ public class GradeCalculationService : IGradeCalculationService
         double gap = Math.Max(0, subject.TargetGrade - currentGrade);
         double maxAchievable = CalculateMaxAchievableGrade(subject);
 
+        _logger.LogInformation(
+            "Расчёт плана для предмета '{Name}' (Id={Id}): текущая={Current:F2}, цель={Target}, максимум={Max:F2}",
+            subject.Name, subject.Id, currentGrade, subject.TargetGrade, maxAchievable);
+
         if (maxAchievable < subject.TargetGrade - 1e-6)
         {
+            _logger.LogInformation(
+                "Предмет '{Name}': цель недостижима, максимум {Max:F2}",
+                subject.Name, maxAchievable);
+
             return new OptimizationPlan(
                 subject: subject,
                 currentGrade: currentGrade,
@@ -60,6 +70,10 @@ public class GradeCalculationService : IGradeCalculationService
 
         if (gap < 1e-9)
         {
+            _logger.LogInformation(
+                "Предмет '{Name}': цель уже достигнута, текущая оценка {Current:F2}",
+                subject.Name, currentGrade);
+
             return new OptimizationPlan(
                 subject: subject,
                 currentGrade: currentGrade,
@@ -72,6 +86,10 @@ public class GradeCalculationService : IGradeCalculationService
 
         List<OptimizationItem> items = BuildPlan(subject);
         string recommendation = BuildRecommendation(items);
+
+        _logger.LogInformation(
+            "Предмет '{Name}': план рассчитан, {Count} компонентов к улучшению",
+            subject.Name, items.Count);
 
         return new OptimizationPlan(
             subject: subject,
@@ -139,6 +157,10 @@ public class GradeCalculationService : IGradeCalculationService
 
         double hypotheticalGrade = Math.Round(hypotheticalWeightedSum / totalWeight, 2);
         double pointsRemaining = Math.Max(0, subject.TargetGrade - hypotheticalGrade);
+
+        _logger.LogInformation(
+            "Сценарий что если для предмета '{Name}': гипотетическая оценка {Hyp:F2}, цель {Target}",
+            subject.Name, hypotheticalGrade, subject.TargetGrade);
 
         return new WhatIfResponse
         {
@@ -210,7 +232,7 @@ public class GradeCalculationService : IGradeCalculationService
             }
 
             double requiredGrade = Math.Min(Math.Ceiling(needed * 100) / 100.0, 10.0);
-            double costPerUnit = component.Complexity / component.WeightAsDecimal();
+            double costPerUnit = (double)component.Complexity / component.WeightAsDecimal();
             string reason = $"Стоимость усилий: {costPerUnit:F1} " +
                             $"(вес {component.Weight}%, сложность {component.Complexity})";
 
