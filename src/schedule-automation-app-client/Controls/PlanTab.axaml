@@ -78,13 +78,47 @@
         <ScrollViewer Grid.Row="2">
             <StackPanel Spacing="16">
 
+                <StackPanel HorizontalAlignment="Center"
+                            Spacing="10"
+                            IsVisible="{Binding CurrentPlan, Converter={x:Static ObjectConverters.IsNull}}">
+                    <TextBlock Text="План ещё не рассчитан"
+                               FontSize="16"
+                               Foreground="#999"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Настройте формулу и нажмите «Рассчитать план»"
+                               Foreground="#bbb"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <Border Background="#FFF3CD"
+                        CornerRadius="6"
+                        Padding="12">
+                    <Border.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="CurrentPlan" Converter="{x:Static ObjectConverters.IsNotNull}"/>
+                            <Binding Path="CurrentPlan.IsAchievable" Converter="{x:Static BoolConverters.Not}"/>
+                        </MultiBinding>
+                    </Border.IsVisible>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Цель недостижима"
+                                   FontWeight="SemiBold"
+                                   FontSize="16"
+                                   Foreground="#856404"/>
+                        <TextBlock Text="{Binding ServerStatus}"
+                                   Foreground="#856404"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
                 <StackPanel IsVisible="{Binding CurrentPlan, Converter={x:Static ObjectConverters.IsNotNull}}"
                             Spacing="8">
 
                     <TextBlock Text="Оптимальный план:"
-                               FontWeight="SemiBold"/>
+                               FontWeight="SemiBold"
+                               IsVisible="{Binding CurrentPlan.IsAchievable}"/>
 
-                    <ItemsControl ItemsSource="{Binding CurrentPlan.OptimalPlan}">
+                    <ItemsControl ItemsSource="{Binding CurrentPlan.OptimalPlan}"
+                                  IsVisible="{Binding CurrentPlan.IsAchievable}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Background="#F8F9FA"
@@ -131,18 +165,22 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                </StackPanel>
+                    <Border Background="#D4EDDA"
+                            CornerRadius="6"
+                            Padding="12">
+                        <Border.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="CurrentPlan.IsAchievable"/>
+                                <Binding Path="CurrentPlan.OptimalPlan.Count"
+                                         Converter="{x:Static ObjectConverters.IsNull}"/>
+                            </MultiBinding>
+                        </Border.IsVisible>
+                        <TextBlock Text="{Binding ServerStatus}"
+                                   Foreground="#155724"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"/>
+                    </Border>
 
-                <StackPanel HorizontalAlignment="Center"
-                            Spacing="10"
-                            IsVisible="{Binding CurrentPlan, Converter={x:Static ObjectConverters.IsNull}}">
-                    <TextBlock Text="План ещё не рассчитан"
-                               FontSize="16"
-                               Foreground="#999"
-                               HorizontalAlignment="Center"/>
-                    <TextBlock Text="Настройте формулу и нажмите «Рассчитать план»"
-                               Foreground="#bbb"
-                               HorizontalAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel IsVisible="{Binding CanEditSubject}"
@@ -167,8 +205,15 @@
                                     <Grid ColumnDefinitions="*,Auto,120">
 
                                         <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding Name}"
-                                                       FontWeight="SemiBold"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="SemiBold"/>
+                                                <TextBlock Text="(зафиксирована)"
+                                                           Foreground="#999"
+                                                           FontSize="11"
+                                                           FontStyle="Italic"
+                                                           IsVisible="{Binding IsGraded}"/>
+                                            </StackPanel>
                                             <TextBlock Text="{Binding CurrentGrade, StringFormat=Текущая: {0:F1}}"
                                                        Foreground="#666"
                                                        FontSize="12"/>
@@ -185,7 +230,8 @@
                                                        Minimum="0"
                                                        Maximum="10"
                                                        Increment="0.5"
-                                                       FormatString="F1"/>
+                                                       FormatString="F1"
+                                                       IsEnabled="{Binding !IsGraded}"/>
 
                                     </Grid>
                                 </Border>

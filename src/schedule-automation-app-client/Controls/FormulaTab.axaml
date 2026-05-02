@@ -49,18 +49,27 @@
                   CellEditEnded="OnCellEditEnded">
 
             <DataGrid.Columns>
+
                 <DataGridTextColumn Header="Название"
                                     Binding="{Binding Name}"
                                     Width="*"/>
+
                 <DataGridTextColumn Header="Вес (%)"
                                     Binding="{Binding Weight}"
                                     Width="90"/>
+
                 <DataGridTextColumn Header="Сложность (1-10)"
                                     Binding="{Binding Complexity}"
                                     Width="130"/>
+
                 <DataGridTextColumn Header="Текущая оценка"
                                     Binding="{Binding CurrentGrade}"
                                     Width="130"/>
+
+                <DataGridCheckBoxColumn Header="Зафиксирована"
+                                        Binding="{Binding IsGraded}"
+                                        Width="120"/>
+
             </DataGrid.Columns>
 
         </DataGrid>

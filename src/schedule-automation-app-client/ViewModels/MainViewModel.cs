@@ -19,14 +19,11 @@ public class MainViewModel : ViewModelBase
     private string _statusMessage;
     private ObservableCollection<Subject> _subjects;
     private GradeComponent _selectedComponent;
-
     private readonly IStorageService _storageService;
-    
     private readonly IApiService _apiService;
     private PlanResponseDto? _currentPlan;
     private bool _isLoading;
     private string _serverStatus;
-    
     private WhatIfViewModel _whatIf;
 
     public ObservableCollection<Subject> Subjects
@@ -43,12 +40,12 @@ public class MainViewModel : ViewModelBase
             if (SetField(ref _selectedSubject, value))
             {
                 CurrentPlan = null;
-                
+
                 if (value != null)
                 {
                     WhatIf.LoadFromSubject(value);
                 }
-                
+
                 OnPropertyChanged(nameof(CurrentFormula));
                 OnPropertyChanged(nameof(CanCalculatePlan));
                 UpdateStatusMessage();
@@ -123,7 +120,7 @@ public class MainViewModel : ViewModelBase
     public bool CanDeleteSubject => SelectedSubject != null;
     public bool CanAddComponent => SelectedSubject != null;
     public bool CanDeleteComponent => SelectedSubject != null && SelectedComponent != null;
-    
+
     public bool IsLoading
     {
         get => _isLoading;
@@ -143,7 +140,7 @@ public class MainViewModel : ViewModelBase
     }
 
     public bool CanCalculatePlan => SelectedSubject != null && IsFormulaValid && !IsLoading;
-    
+
     public WhatIfViewModel WhatIf
     {
         get => _whatIf;
@@ -155,25 +152,22 @@ public class MainViewModel : ViewModelBase
     public ICommand DeleteSubjectCommand { get; set; }
     public ICommand AddComponentCommand { get; set; }
     public ICommand DeleteComponentCommand { get; set; }
-    
     public ICommand CalculatePlanCommand { get; set; }
 
     public MainViewModel()
     {
         _storageService = new JsonStorageService();
+        _apiService = new ApiService();
+        _whatIf = new WhatIfViewModel();
+        WhatIf = _whatIf;
 
         Subjects = new ObservableCollection<Subject>();
-        
-        _apiService = new ApiService();
 
         InitializeCommands();
 
         StatusMessage = "Загрузка данных...";
 
         LoadSubjectsAsync();
-        
-        _whatIf = new WhatIfViewModel();
-        WhatIf = _whatIf;
     }
 
     private async void LoadSubjectsAsync()
@@ -226,6 +220,19 @@ public class MainViewModel : ViewModelBase
         {
             ServerStatus = "Сервер недоступен. Убедитесь что сервер запущен на localhost:5284.";
             CurrentPlan = null;
+            StatusMessage = "Не удалось получить план — сервер недоступен.";
+        }
+        else if (!plan.IsAchievable)
+        {
+            CurrentPlan = plan;
+            ServerStatus = plan.Recommendation;
+            StatusMessage = "Цель недостижима с текущими настройками.";
+        }
+        else if (plan.OptimalPlan.Count == 0)
+        {
+            CurrentPlan = plan;
+            ServerStatus = "Текущих оценок уже достаточно для достижения цели.";
+            StatusMessage = $"Цель уже достигнута! Текущая оценка: {plan.CurrentGrade:F2}";
         }
         else
         {
@@ -237,7 +244,7 @@ public class MainViewModel : ViewModelBase
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         OnPropertyChanged(nameof(CanCalculatePlan));
     }
-    
+
     private async void ExecuteAddSubject()
     {
         SubjectDialogViewModel vm = new SubjectDialogViewModel();
@@ -320,7 +327,8 @@ public class MainViewModel : ViewModelBase
             Name = $"Компонент {SelectedSubject.Formula.Count + 1}",
             Weight = 10,
             Complexity = 5,
-            CurrentGrade = 0
+            CurrentGrade = 0,
+            IsGraded = false
         };
 
         SelectedSubject.Formula.Add(component);
@@ -352,6 +360,7 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalWeightMessage));
         OnPropertyChanged(nameof(IsFormulaValid));
         OnPropertyChanged(nameof(FormulaStatusColor));
+        OnPropertyChanged(nameof(CanCalculatePlan));
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         SaveSubjectsAsync();
     }

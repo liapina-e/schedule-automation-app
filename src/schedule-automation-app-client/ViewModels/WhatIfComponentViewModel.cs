@@ -10,12 +10,18 @@ public class WhatIfComponentViewModel : ViewModelBase
     public string Name { get; }
     public double Weight { get; }
     public double CurrentGrade { get; }
+    public bool IsGraded { get; }
 
     public double HypotheticalGrade
     {
         get => _hypotheticalGrade;
         set
         {
+            if (IsGraded)
+            {
+                return;
+            }
+
             if (value < 0)
             {
                 value = 0;
@@ -40,6 +46,7 @@ public class WhatIfComponentViewModel : ViewModelBase
         Name = component.Name;
         Weight = component.Weight;
         CurrentGrade = component.CurrentGrade;
+        IsGraded = component.IsGraded;
         _hypotheticalGrade = component.CurrentGrade;
     }
 }

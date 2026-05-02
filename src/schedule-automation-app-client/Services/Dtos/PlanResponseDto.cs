@@ -8,5 +8,6 @@ public record PlanResponseDto(
     string Name,
     double CurrentGrade,
     int TargetGrade,
+    bool IsAchievable,
     string Recommendation,
     List<OptimizationItemDto> OptimalPlan);

@@ -14,7 +14,7 @@ public class Subject : INotifyPropertyChanged
     private ObservableCollection<GradeComponent> _formula;
     private DateTime _createdAt;
     private DateTime _updatedAt;
-    
+
     public event PropertyChangedEventHandler PropertyChanged;
 
     public Guid Id
@@ -26,9 +26,13 @@ public class Subject : INotifyPropertyChanged
     public string Name
     {
         get => _name;
-        set => SetField(ref _name, value);
+        set
+        {
+            SetField(ref _name, value);
+            OnPropertyChanged(nameof(DisplayInfo));
+        }
     }
-    
+
     public int TargetGrade
     {
         get => _targetGrade;
@@ -38,8 +42,9 @@ public class Subject : INotifyPropertyChanged
             {
                 throw new ArgumentOutOfRangeException(nameof(TargetGrade), "Оценка должна быть от 4 до 10");
             }
-                
+
             SetField(ref _targetGrade, value);
+            OnPropertyChanged(nameof(DisplayInfo));
         }
     }
 
@@ -71,6 +76,8 @@ public class Subject : INotifyPropertyChanged
         UpdatedAt = DateTime.Now;
     }
 
+    public string DisplayInfo => $"{Name} (Цель: {TargetGrade})";
+
     protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -89,9 +96,7 @@ public class Subject : INotifyPropertyChanged
         {
             UpdatedAt = DateTime.Now;
         }
-                
+
         return true;
     }
-
-    public string DisplayInfo => $"{Name} (Цель: {TargetGrade})";
 }
