@@ -1,6 +1,7 @@
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using schedule_automation_app_server.Application.DTOs;
 using schedule_automation_app_server.Application.Mappers;
 using schedule_automation_app_server.Application.Services.Interfaces;
@@ -16,17 +17,23 @@ public class SubjectsController : ControllerBase
     private readonly IGradeCalculationService _calculationService;
     private readonly IValidator<CreateSubjectRequest> _createValidator;
     private readonly IValidator<UpdateSubjectRequest> _updateValidator;
+    private readonly IMemoryCache _cache;
+
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+    private const string StatsCacheKey = "stats";
 
     public SubjectsController(
         ISubjectRepository repository,
         IGradeCalculationService calculationService,
         IValidator<CreateSubjectRequest> createValidator,
-        IValidator<UpdateSubjectRequest> updateValidator)
+        IValidator<UpdateSubjectRequest> updateValidator,
+        IMemoryCache cache)
     {
         _repository = repository;
         _calculationService = calculationService;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _cache = cache;
     }
 
     [HttpGet]
@@ -49,6 +56,13 @@ public class SubjectsController : ControllerBase
             return BadRequest(new { error = "Неверный ID предмета." });
         }
 
+        string cacheKey = $"plan_{id}";
+
+        if (_cache.TryGetValue(cacheKey, out SubjectResponse? cached))
+        {
+            return Ok(cached);
+        }
+
         Subject? subject = await _repository.GetByIdAsync(id);
 
         if (subject == null)
@@ -57,7 +71,11 @@ public class SubjectsController : ControllerBase
         }
 
         OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
-        return Ok(SubjectMapper.ToResponse(subject, plan));
+        SubjectResponse response = SubjectMapper.ToResponse(subject, plan);
+
+        _cache.Set(cacheKey, response, CacheDuration);
+
+        return Ok(response);
     }
 
     [HttpPost]
@@ -82,7 +100,11 @@ public class SubjectsController : ControllerBase
             await _repository.AddAsync(subject);
 
             OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
-            return Ok(SubjectMapper.ToResponse(subject, plan));
+            SubjectResponse response = SubjectMapper.ToResponse(subject, plan);
+
+            _cache.Set($"plan_{subject.Id}", response, CacheDuration);
+            _cache.Remove(StatsCacheKey);
+            return Ok(response);
         }
         catch (ArgumentException ex)
         {
@@ -122,9 +144,15 @@ public class SubjectsController : ControllerBase
         {
             await _repository.UpdateAsync(id, request);
 
+            _cache.Remove($"plan_{id}");
+
             Subject? updated = await _repository.GetByIdAsync(id);
             OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(updated!);
-            return Ok(SubjectMapper.ToResponse(updated!, plan));
+            SubjectResponse response = SubjectMapper.ToResponse(updated!, plan);
+
+            _cache.Set($"plan_{id}", response, CacheDuration);
+
+            return Ok(response);
         }
         catch (ArgumentException ex)
         {
@@ -208,6 +236,8 @@ public class SubjectsController : ControllerBase
             return NotFound(new { error = $"Предмет с ID {id} не найден." });
         }
 
+        _cache.Remove($"plan_{id}");
+        _cache.Remove(StatsCacheKey);
         await _repository.DeleteAsync(subject);
         return NoContent();
     }
