@@ -115,7 +115,7 @@ public class GradeCalculationService : IGradeCalculationService
             if (!component.IsGraded)
             {
                 WhatIfComponentDto? hypothesis = hypotheticalGrades
-                    .FirstOrDefault(h => h.ComponentName == component.Name);
+                    .FirstOrDefault(h => h.ComponentId == component.Id);
 
                 if (hypothesis != null)
                 {
@@ -128,6 +128,7 @@ public class GradeCalculationService : IGradeCalculationService
 
             componentResults.Add(new WhatIfComponentResultDto
             {
+                ComponentId = component.Id,
                 ComponentName = component.Name,
                 CurrentGrade = component.CurrentGrade,
                 HypotheticalGrade = gradeToUse,

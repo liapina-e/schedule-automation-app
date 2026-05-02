@@ -76,6 +76,7 @@ public static class SubjectMapper
     {
         return new OptimizationItemDto
         {
+            ComponentId = item.ComponentId,
             ComponentName = item.ComponentName,
             CurrentGrade = Math.Round(item.CurrentGrade, 2),
             RequiredGrade = item.RequiredGrade,
