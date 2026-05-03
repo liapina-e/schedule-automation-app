@@ -17,21 +17,7 @@ public static class SubjectMapper
         return subject;
     }
 
-    public static void UpdateDomain(Subject subject, UpdateSubjectRequest request)
-    {
-        List<GradeComponent> components = request.Components
-            .Select(dto => MapComponent(dto))
-            .ToList();
-
-        subject.Update(request.Name, request.TargetGrade);
-
-        foreach (GradeComponent component in components)
-        {
-            subject.AddComponent(component);
-        }
-    }
-
-    public static SubjectResponse ToResponse(Subject subject, OptimizationPlan plan)
+    public static SubjectResponse ToResponse(Subject subject, OptimizationPlan plan, List<OptimizationPlan>? plansRange = null)
     {
         return new SubjectResponse
         {
@@ -41,7 +27,14 @@ public static class SubjectMapper
             TargetGrade = subject.TargetGrade,
             IsAchievable = plan.IsAchievable,
             Recommendation = plan.Recommendation,
-            OptimalPlan = plan.Items.Select(ToOptimizationItemDto).ToList()
+            OptimalPlan = plan.Items.Select(ToOptimizationItemDto).ToList(),
+            PlansRange = plansRange?.Select(p => new GradePlanDto
+            {
+                TargetGrade = p.TargetGrade,
+                IsAchievable = p.IsAchievable,
+                Recommendation = p.Recommendation,
+                Plan = p.Items.Select(ToOptimizationItemDto).ToList()
+            }).ToList() ?? new List<GradePlanDto>()
         };
     }
 
@@ -68,7 +61,9 @@ public static class SubjectMapper
         )
         {
             IsBlocking = dto.IsBlocking,
-            MinimumGrade = dto.MinimumGrade
+            MinimumGrade = dto.MinimumGrade,
+            IsAutoGrade = dto.IsAutoGrade,
+            AutoGradeMinScore = dto.AutoGradeMinScore
         };
     }
 

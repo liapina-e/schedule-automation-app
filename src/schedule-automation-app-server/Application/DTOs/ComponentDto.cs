@@ -9,4 +9,6 @@ public class ComponentDto
     public bool IsBlocking { get; set; }
     public double MinimumGrade { get; set; }
     public bool IsGraded { get; set; }
+    public bool IsAutoGrade { get; set; }
+    public double AutoGradeMinScore { get; set; }
 }

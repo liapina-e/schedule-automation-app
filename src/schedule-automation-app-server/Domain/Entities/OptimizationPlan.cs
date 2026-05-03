@@ -6,6 +6,7 @@ public class OptimizationPlan : BaseEntity
 {
     public Guid SubjectId { get; private set; }
     public Subject Subject { get; private set; } = null!;
+    public int TargetGrade { get; private set; }
     public double CurrentGrade { get; private set; }
     public double NecessaryPoints { get; private set; }
     public bool IsAchievable { get; private set; }
@@ -17,6 +18,7 @@ public class OptimizationPlan : BaseEntity
 
     public OptimizationPlan(
         Subject subject,
+        int targetGrade,
         double currentGrade,
         double necessaryPoints,
         bool isAchievable,
@@ -25,6 +27,7 @@ public class OptimizationPlan : BaseEntity
     {
         Subject = subject ?? throw new ArgumentNullException(nameof(subject));
         SubjectId = subject.Id;
+        TargetGrade = targetGrade;
         CurrentGrade = currentGrade;
         NecessaryPoints = necessaryPoints;
         IsAchievable = isAchievable;
