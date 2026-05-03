@@ -10,4 +10,7 @@ public record PlanResponseDto(
     int TargetGrade,
     bool IsAchievable,
     string Recommendation,
-    List<OptimizationItemDto> OptimalPlan);
+    List<OptimizationItemDto> OptimalPlan,
+    List<GradePlanDto> PlansRange,
+    bool HasAutoGradeOption,
+    AutoGradePlanDto? PlanWithAuto);
