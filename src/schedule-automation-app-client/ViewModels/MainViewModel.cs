@@ -72,11 +72,30 @@ public class MainViewModel : ViewModelBase
         get => _selectedComponent;
         set
         {
+            if (_selectedComponent != null)
+            {
+                _selectedComponent.PropertyChanged -= OnSelectedComponentPropertyChanged;
+            }
+
             if (SetField(ref _selectedComponent, value))
             {
+                if (_selectedComponent != null)
+                {
+                    _selectedComponent.PropertyChanged += OnSelectedComponentPropertyChanged;
+                }
+
                 (DeleteComponentCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 OnPropertyChanged(nameof(CanDeleteComponent));
+                OnPropertyChanged(nameof(CanSelectBlockingMinimum));
             }
+        }
+    }
+
+    private void OnSelectedComponentPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(GradeComponent.IsBlocking))
+        {
+            OnPropertyChanged(nameof(CanSelectBlockingMinimum));
         }
     }
 
@@ -146,6 +165,11 @@ public class MainViewModel : ViewModelBase
         get => _whatIf;
         set => SetField(ref _whatIf, value);
     }
+    
+    public bool CanSelectBlockingMinimum =>
+        SelectedComponent != null && SelectedComponent.IsBlocking;
+
+    public double[] BlockingMinimumOptions => new[] { 3.5, 4.0 };
 
     public ICommand AddSubjectCommand { get; set; }
     public ICommand EditSubjectCommand { get; set; }
@@ -363,6 +387,7 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsFormulaValid));
         OnPropertyChanged(nameof(FormulaStatusColor));
         OnPropertyChanged(nameof(CanCalculatePlan));
+        OnPropertyChanged(nameof(CanSelectBlockingMinimum));
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         SaveSubjectsAsync();
     }
