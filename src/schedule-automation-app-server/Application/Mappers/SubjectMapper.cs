@@ -17,8 +17,49 @@ public static class SubjectMapper
         return subject;
     }
 
-    public static SubjectResponse ToResponse(Subject subject, OptimizationPlan plan, List<OptimizationPlan>? plansRange = null)
+    public static void UpdateDomain(Subject subject, UpdateSubjectRequest request)
     {
+        List<GradeComponent> components = request.Components
+            .Select(dto => MapComponent(dto))
+            .ToList();
+
+        subject.Update(request.Name, request.TargetGrade);
+
+        foreach (GradeComponent component in components)
+        {
+            subject.AddComponent(component);
+        }
+    }
+
+    public static SubjectResponse ToResponse(
+        Subject subject,
+        OptimizationPlan plan,
+        List<OptimizationPlan>? plansRange = null,
+        OptimizationPlan? planWithAuto = null)
+    {
+        bool hasAutoComponents = subject.Components.Any(c => c.IsAutoGrade);
+
+        AutoGradePlanDto? autoGradePlan = null;
+
+        if (hasAutoComponents && planWithAuto != null)
+        {
+            autoGradePlan = new AutoGradePlanDto
+            {
+                IsAchievable = planWithAuto.IsAchievable,
+                Recommendation = planWithAuto.Recommendation,
+                Plan = planWithAuto.Items.Select(ToOptimizationItemDto).ToList(),
+                AutoGradeComponents = subject.Components
+                    .Where(c => c.IsAutoGrade)
+                    .Select(c => new AutoGradeComponentInfoDto
+                    {
+                        ComponentName = c.Name,
+                        CurrentGrade = c.CurrentGrade,
+                        RequiredMinScore = c.AutoGradeMinScore,
+                        IsAlreadyAchieved = c.CurrentGrade >= c.AutoGradeMinScore - 1e-6
+                    }).ToList()
+            };
+        }
+
         return new SubjectResponse
         {
             Id = subject.Id,
@@ -34,7 +75,9 @@ public static class SubjectMapper
                 IsAchievable = p.IsAchievable,
                 Recommendation = p.Recommendation,
                 Plan = p.Items.Select(ToOptimizationItemDto).ToList()
-            }).ToList() ?? new List<GradePlanDto>()
+            }).ToList() ?? new List<GradePlanDto>(),
+            HasAutoGradeOption = hasAutoComponents,
+            PlanWithAuto = autoGradePlan
         };
     }
 

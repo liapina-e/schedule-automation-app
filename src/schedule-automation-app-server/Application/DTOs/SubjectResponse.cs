@@ -10,4 +10,6 @@ public class SubjectResponse
     public string Recommendation { get; set; } = string.Empty;
     public List<OptimizationItemDto> OptimalPlan { get; set; } = new();
     public List<GradePlanDto> PlansRange { get; set; } = new();
+    public bool HasAutoGradeOption { get; set; }
+    public AutoGradePlanDto? PlanWithAuto { get; set; }
 }

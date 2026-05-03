@@ -361,4 +361,157 @@ public class GradeCalculationService : IGradeCalculationService
 
         return "Минимальный план:\n" + string.Join("\n", lines);
     }
+    
+    public OptimizationPlan CalculateOptimizationPlanWithAuto(Subject subject)
+{
+    if (subject == null)
+    {
+        throw new ArgumentNullException(nameof(subject));
+    }
+
+    bool hasAutoComponents = subject.Components.Any(c => c.IsAutoGrade);
+
+    if (!hasAutoComponents)
+    {
+        return CalculateOptimizationPlan(subject);
+    }
+
+    double currentGrade = CalculateCurrentGrade(subject);
+    double gap = Math.Max(0, subject.TargetGrade - currentGrade);
+    double maxAchievable = CalculateMaxAchievableGrade(subject);
+
+    if (maxAchievable < subject.TargetGrade - 1e-6)
+    {
+        return new OptimizationPlan(
+            subject: subject,
+            targetGrade: subject.TargetGrade,
+            currentGrade: currentGrade,
+            necessaryPoints: gap,
+            isAchievable: false,
+            items: new List<OptimizationItem>(),
+            recommendation: $"Цель недостижима даже с автоматом. Максимум: {maxAchievable:F2}."
+        );
+    }
+
+    if (gap < 1e-9)
+    {
+        return new OptimizationPlan(
+            subject: subject,
+            targetGrade: subject.TargetGrade,
+            currentGrade: currentGrade,
+            necessaryPoints: 0,
+            isAchievable: true,
+            items: new List<OptimizationItem>(),
+            recommendation: "Текущих оценок уже достаточно для достижения цели."
+        );
+    }
+
+    List<OptimizationItem> items = BuildPlanWithAuto(subject);
+    string recommendation = BuildRecommendation(items);
+
+    return new OptimizationPlan(
+        subject: subject,
+        targetGrade: subject.TargetGrade,
+        currentGrade: currentGrade,
+        necessaryPoints: gap,
+        isAchievable: true,
+        items: items,
+        recommendation: recommendation
+    );
+}
+
+    private List<OptimizationItem> BuildPlanWithAuto(Subject subject)
+    {
+        List<GradeComponent> improvable = GetImprovableComponents(subject);
+
+        if (improvable.Count == 0)
+        {
+            return new List<OptimizationItem>();
+        }
+
+        double[] currentGrades = improvable.Select(c => c.CurrentGrade).ToArray();
+        double[] weights = improvable.Select(c => c.WeightAsDecimal()).ToArray();
+        int[] complexities = improvable.Select(c => c.Complexity).ToArray();
+
+        bool[] effectiveBlocking = improvable
+            .Select(c => c.IsBlocking || c.IsAutoGrade)
+            .ToArray();
+
+        double[] effectiveMinimums = improvable
+            .Select(c =>
+            {
+                if (c.IsBlocking && c.IsAutoGrade)
+                {
+                    return Math.Max(c.MinimumGrade, c.AutoGradeMinScore);
+                }
+
+                if (c.IsAutoGrade)
+                {
+                    return c.AutoGradeMinScore;
+                }
+
+                return c.MinimumGrade;
+            })
+            .ToArray();
+
+        double lockedSum = subject.Components
+            .Except(improvable)
+            .Sum(c => c.CurrentGrade * c.WeightAsDecimal());
+
+        double totalWeight = subject.Components.Sum(c => c.WeightAsDecimal());
+        double targetWeightedSum = subject.TargetGrade * totalWeight - lockedSum;
+
+        double[] optimalGrades = _solver.Solve(
+            currentGrades,
+            weights,
+            complexities,
+            targetWeightedSum,
+            effectiveBlocking,
+            effectiveMinimums
+        );
+
+        return MapResultToItemsWithAutoInfo(improvable, optimalGrades);
+    }
+
+    private List<OptimizationItem> MapResultToItemsWithAutoInfo(List<GradeComponent> improvable, double[] optimalGrades)
+    {
+        List<OptimizationItem> items = new List<OptimizationItem>();
+        int priority = 1;
+
+        for (int i = 0; i < improvable.Count; i++)
+        {
+            GradeComponent component = improvable[i];
+            double needed = optimalGrades[i];
+
+            if (needed <= component.CurrentGrade + 1e-6)
+            {
+                continue;
+            }
+
+            double requiredGrade = Math.Min(Math.Ceiling(needed * 100) / 100.0, 10.0);
+            double costPerUnit = component.Complexity / component.WeightAsDecimal();
+
+            string reason;
+            if (component.IsAutoGrade && requiredGrade <= component.AutoGradeMinScore + 1e-6)
+            {
+                reason = $"Условие автомата — минимум {component.AutoGradeMinScore:F1} " +
+                         $"(вес {component.Weight}%, сложность {component.Complexity})";
+            }
+            else if (component.IsBlocking && requiredGrade <= component.MinimumGrade + 1e-6)
+            {
+                reason = $"Блокирующий компонент — минимум {component.MinimumGrade:F1} " +
+                         $"(вес {component.Weight}%, сложность {component.Complexity})";
+            }
+            else
+            {
+                reason = $"Стоимость усилий: {costPerUnit:F1} " +
+                         $"(вес {component.Weight}%, сложность {component.Complexity})";
+            }
+
+            items.Add(new OptimizationItem(component, requiredGrade, priority, reason));
+            priority++;
+        }
+
+        return items;
+    }
 }
