@@ -72,7 +72,8 @@ public class SubjectsController : ControllerBase
 
         OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
         List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(subject);
-        SubjectResponse response = SubjectMapper.ToResponse(subject, plan, plansRange);
+        OptimizationPlan planWithAuto = _calculationService.CalculateOptimizationPlanWithAuto(subject);
+        SubjectResponse response = SubjectMapper.ToResponse(subject, plan, plansRange, planWithAuto);
 
         _cache.Set(cacheKey, response, CacheDuration);
 
@@ -102,8 +103,9 @@ public class SubjectsController : ControllerBase
 
             OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
             List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(subject);
-            SubjectResponse response = SubjectMapper.ToResponse(subject, plan, plansRange);
-
+            OptimizationPlan planWithAuto = _calculationService.CalculateOptimizationPlanWithAuto(subject);
+            SubjectResponse response = SubjectMapper.ToResponse(subject, plan, plansRange, planWithAuto);
+            
             _cache.Set($"plan_{subject.Id}", response, CacheDuration);
             _cache.Remove(StatsCacheKey);
             return Ok(response);
@@ -151,8 +153,8 @@ public class SubjectsController : ControllerBase
             Subject? updated = await _repository.GetByIdAsync(id);
             OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(updated!);
             List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(updated!);
-            SubjectResponse response = SubjectMapper.ToResponse(updated!, plan, plansRange);
-
+            OptimizationPlan planWithAuto = _calculationService.CalculateOptimizationPlanWithAuto(updated!);
+            SubjectResponse response = SubjectMapper.ToResponse(updated!, plan, plansRange, planWithAuto);
             _cache.Set($"plan_{id}", response, CacheDuration);
 
             return Ok(response);

@@ -8,6 +8,7 @@ public interface IGradeCalculationService
     double CalculateCurrentGrade(Subject subject);
     OptimizationPlan CalculateOptimizationPlan(Subject subject);
     OptimizationPlan CalculateOptimizationPlanForGrade(Subject subject, int targetGrade);
+    OptimizationPlan CalculateOptimizationPlanWithAuto(Subject subject);
     List<OptimizationPlan> CalculatePlansRange(Subject subject);
     WhatIfResponse CalculateWhatIf(Subject subject, List<WhatIfComponentDto> hypotheticalGrades);
 }
