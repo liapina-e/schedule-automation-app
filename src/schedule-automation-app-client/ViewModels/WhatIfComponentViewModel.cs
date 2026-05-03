@@ -11,6 +11,9 @@ public class WhatIfComponentViewModel : ViewModelBase
     public double Weight { get; }
     public double CurrentGrade { get; }
     public bool IsGraded { get; }
+    public bool IsBlocking { get; }
+    public bool IsAutoGrade { get; }
+    public double AutoGradeMinScore { get; }
 
     public double HypotheticalGrade
     {
@@ -47,6 +50,9 @@ public class WhatIfComponentViewModel : ViewModelBase
         Weight = component.Weight;
         CurrentGrade = component.CurrentGrade;
         IsGraded = component.IsGraded;
+        IsBlocking = component.IsBlocking;
+        IsAutoGrade = component.IsAutoGrade;
+        AutoGradeMinScore = component.AutoGradeMinScore;
         _hypotheticalGrade = component.CurrentGrade;
     }
 }

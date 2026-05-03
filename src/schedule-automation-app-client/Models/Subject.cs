@@ -14,6 +14,8 @@ public class Subject : INotifyPropertyChanged
     private ObservableCollection<GradeComponent> _formula;
     private DateTime _createdAt;
     private DateTime _updatedAt;
+    private bool _hasAutoGrade;
+    private double _autoGradeMinScore;
 
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -54,6 +56,18 @@ public class Subject : INotifyPropertyChanged
         set => SetField(ref _formula, value);
     }
 
+    public bool HasAutoGrade
+    {
+        get => _hasAutoGrade;
+        set => SetField(ref _hasAutoGrade, value);
+    }
+
+    public double AutoGradeMinScore
+    {
+        get => _autoGradeMinScore;
+        set => SetField(ref _autoGradeMinScore, value);
+    }
+
     public DateTime CreatedAt
     {
         get => _createdAt;
@@ -72,6 +86,8 @@ public class Subject : INotifyPropertyChanged
         Name = "Новый предмет";
         TargetGrade = 4;
         Formula = new ObservableCollection<GradeComponent>();
+        HasAutoGrade = false;
+        AutoGradeMinScore = 8;
         CreatedAt = DateTime.Now;
         UpdatedAt = DateTime.Now;
     }

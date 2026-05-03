@@ -7,4 +7,7 @@ public record ComponentRequestDto(
     double CurrentGrade,
     bool IsBlocking,
     double MinimumGrade,
-    bool IsGraded);
+    bool IsGraded,
+    bool IsAutoGrade,
+    double AutoGradeMinScore
+);

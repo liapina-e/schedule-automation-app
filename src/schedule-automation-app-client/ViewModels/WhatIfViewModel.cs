@@ -8,6 +8,8 @@ public class WhatIfViewModel : ViewModelBase
 {
     private ObservableCollection<WhatIfComponentViewModel> _components;
     private double _hypotheticalGrade;
+    private bool _isBlockingConditionFailed;
+    private bool _autoGradeAchieved;
 
     public ObservableCollection<WhatIfComponentViewModel> Components
     {
@@ -21,9 +23,55 @@ public class WhatIfViewModel : ViewModelBase
         set => SetField(ref _hypotheticalGrade, value);
     }
 
+    public bool IsBlockingConditionFailed
+    {
+        get => _isBlockingConditionFailed;
+        set => SetField(ref _isBlockingConditionFailed, value);
+    }
+
+    public bool AutoGradeAchieved
+    {
+        get => _autoGradeAchieved;
+        set => SetField(ref _autoGradeAchieved, value);
+    }
+
     public string HypotheticalGradeText => $"Итоговая оценка: {HypotheticalGrade:F1}";
 
-    public string HypotheticalGradeColor => HypotheticalGrade >= 6 ? "#28a745" : "#dc3545";
+    public string HypotheticalGradeColor
+    {
+        get
+        {
+            if (IsBlockingConditionFailed)
+            {
+                return "#dc3545";
+            }
+
+            return HypotheticalGrade >= 6 ? "#28a745" : "#dc3545";
+        }
+    }
+
+    public string BlockingWarning => IsBlockingConditionFailed
+        ? "Блокирующий компонент ниже минимума (4). Итоговая оценка недостижима."
+        : string.Empty;
+
+    public string AutoGradeStatus
+    {
+        get
+        {
+            if (!Components.Any(c => c.IsAutoGrade))
+            {
+                return string.Empty;
+            }
+
+            return AutoGradeAchieved
+                ? "🎓 Условие автомата выполнено"
+                : "📚 Условие автомата не выполнено";
+        }
+    }
+
+    public string AutoGradeStatusColor => AutoGradeAchieved ? "#28a745" : "#856404";
+
+    public bool HasAutoGradeComponents => Components.Any(c => c.IsAutoGrade);
 
     public WhatIfViewModel()
     {
@@ -34,9 +82,9 @@ public class WhatIfViewModel : ViewModelBase
     {
         Components.Clear();
 
-        foreach (var component in subject.Formula)
+        foreach (GradeComponent component in subject.Formula)
         {
-            var whatIfComponent = new WhatIfComponentViewModel(component);
+            WhatIfComponentViewModel whatIfComponent = new WhatIfComponentViewModel(component);
             whatIfComponent.GradeChanged += Recalculate;
             Components.Add(whatIfComponent);
         }
@@ -61,9 +109,21 @@ public class WhatIfViewModel : ViewModelBase
         }
 
         double weightedSum = Components.Sum(c => c.HypotheticalGrade * c.Weight);
-        HypotheticalGrade = weightedSum / totalWeight;
+        HypotheticalGrade = System.Math.Round(weightedSum / totalWeight, 2);
+
+        IsBlockingConditionFailed = Components
+            .Any(c => c.IsBlocking && c.HypotheticalGrade < 4.0);
+
+        AutoGradeAchieved = Components
+            .Where(c => c.IsAutoGrade)
+            .All(c => c.HypotheticalGrade >= c.AutoGradeMinScore);
 
         OnPropertyChanged(nameof(HypotheticalGradeText));
         OnPropertyChanged(nameof(HypotheticalGradeColor));
+        OnPropertyChanged(nameof(BlockingWarning));
+        OnPropertyChanged(nameof(AutoGradeStatus));
+        OnPropertyChanged(nameof(AutoGradeStatusColor));
+        OnPropertyChanged(nameof(HasAutoGradeComponents));
+        OnPropertyChanged(nameof(AutoGradeAchieved));
     }
 }

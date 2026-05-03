@@ -294,6 +294,8 @@ public class MainViewModel : ViewModelBase
         {
             SelectedSubject.Name = vm.Result.Name;
             SelectedSubject.TargetGrade = vm.Result.TargetGrade;
+            SelectedSubject.HasAutoGrade = vm.Result.HasAutoGrade;
+            SelectedSubject.AutoGradeMinScore = vm.Result.AutoGradeMinScore;
             OnPropertyChanged(nameof(SelectedSubject));
             UpdateStatusMessage();
             StatusMessage = $"Предмет обновлён: {SelectedSubject.Name}";
@@ -379,7 +381,19 @@ public class MainViewModel : ViewModelBase
             formulaInfo = $", {SelectedSubject.Formula.Count} компонентов";
         }
 
-        StatusMessage = $"Выбран: {SelectedSubject.Name}{formulaInfo}";
+        string autoInfo = string.Empty;
+        if (SelectedSubject.HasAutoGrade)
+        {
+            double currentGrade = SelectedSubject.Formula != null && SelectedSubject.Formula.Any()
+                ? SelectedSubject.Formula.Sum(c => c.CurrentGrade * c.Weight / 100.0)
+                : 0;
+
+            autoInfo = currentGrade >= SelectedSubject.AutoGradeMinScore
+                ? " | Автомат: ✓"
+                : $" | Автомат: нужно {SelectedSubject.AutoGradeMinScore:F1}";
+        }
+
+        StatusMessage = $"Выбран: {SelectedSubject.Name}{formulaInfo}{autoInfo}";
         RefreshFormulaStats();
     }
 

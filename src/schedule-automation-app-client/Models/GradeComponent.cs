@@ -13,6 +13,9 @@ public class GradeComponent : INotifyPropertyChanged
     private int _complexity;
     private double _currentGrade;
     private bool _isGraded;
+    private bool _isBlocking;
+    private bool _isAutoGrade;
+    private double _autoGradeMinScore;
 
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -52,6 +55,24 @@ public class GradeComponent : INotifyPropertyChanged
         set => SetField(ref _isGraded, value);
     }
 
+    public bool IsBlocking
+    {
+        get => _isBlocking;
+        set => SetField(ref _isBlocking, value);
+    }
+
+    public bool IsAutoGrade
+    {
+        get => _isAutoGrade;
+        set => SetField(ref _isAutoGrade, value);
+    }
+
+    public double AutoGradeMinScore
+    {
+        get => _autoGradeMinScore;
+        set => SetField(ref _autoGradeMinScore, value);
+    }
+
     public GradeComponent()
     {
         Id = Guid.NewGuid();
@@ -60,6 +81,9 @@ public class GradeComponent : INotifyPropertyChanged
         Complexity = 5;
         CurrentGrade = 0;
         IsGraded = false;
+        IsBlocking = false;
+        IsAutoGrade = false;
+        AutoGradeMinScore = 0;
     }
 
     protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
