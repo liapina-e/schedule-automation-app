@@ -16,6 +16,7 @@ public class GradeComponent : INotifyPropertyChanged
     private bool _isBlocking;
     private bool _isAutoGrade;
     private double _autoGradeMinScore;
+    private double _blockingMinimum = 4.0;
 
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -72,6 +73,12 @@ public class GradeComponent : INotifyPropertyChanged
         get => _autoGradeMinScore;
         set => SetField(ref _autoGradeMinScore, value);
     }
+    
+    public double BlockingMinimum
+    {
+        get => _blockingMinimum;
+        set => SetField(ref _blockingMinimum, value);
+    }
 
     public GradeComponent()
     {
@@ -84,6 +91,7 @@ public class GradeComponent : INotifyPropertyChanged
         IsBlocking = false;
         IsAutoGrade = false;
         AutoGradeMinScore = 0;
+        BlockingMinimum = 4.0;
     }
 
     protected void OnPropertyChanged([CallerMemberName] string propertyName = null)

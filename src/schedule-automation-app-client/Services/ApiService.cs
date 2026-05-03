@@ -38,7 +38,7 @@ public class ApiService : IApiService
                         Complexity: c.Complexity,
                         CurrentGrade: c.CurrentGrade,
                         IsBlocking: c.IsBlocking,
-                        MinimumGrade: c.IsBlocking ? 4.0 : 0.0,
+                        MinimumGrade: c.IsBlocking ? c.BlockingMinimum : 0.0,
                         IsGraded: c.IsGraded,
                         IsAutoGrade: c.IsAutoGrade,
                         AutoGradeMinScore: c.AutoGradeMinScore
