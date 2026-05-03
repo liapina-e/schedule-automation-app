@@ -41,7 +41,7 @@ public class ApiService : IApiService
                         MinimumGrade: c.IsBlocking ? c.BlockingMinimum : 0.0,
                         IsGraded: c.IsGraded,
                         IsAutoGrade: c.IsAutoGrade,
-                        AutoGradeMinScore: c.AutoGradeMinScore
+                        AutoGradeMinScore: c.IsAutoGrade ? c.AutoGradeMinScore : 0.0
                     )).ToList()
                 );
 

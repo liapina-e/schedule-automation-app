@@ -157,6 +157,16 @@ public class MainViewModel : ViewModelBase
         get => _currentPlan;
         set => SetField(ref _currentPlan, value);
     }
+    
+    public bool HasPlansRange =>
+        CurrentPlan != null &&
+        CurrentPlan.PlansRange != null &&
+        CurrentPlan.PlansRange.Count > 1;
+
+    public bool HasAutoGradePlan =>
+        CurrentPlan != null &&
+        CurrentPlan.HasAutoGradeOption &&
+        CurrentPlan.PlanWithAuto != null;
 
     public bool CanCalculatePlan => SelectedSubject != null && IsFormulaValid && !IsLoading;
 
@@ -249,18 +259,24 @@ public class MainViewModel : ViewModelBase
         else if (!plan.IsAchievable)
         {
             CurrentPlan = plan;
+            OnPropertyChanged(nameof(HasPlansRange));
+            OnPropertyChanged(nameof(HasAutoGradePlan));
             ServerStatus = plan.Recommendation;
             StatusMessage = "Цель недостижима с текущими настройками.";
         }
         else if (plan.OptimalPlan.Count == 0)
         {
             CurrentPlan = plan;
+            OnPropertyChanged(nameof(HasPlansRange));
+            OnPropertyChanged(nameof(HasAutoGradePlan));
             ServerStatus = "Текущих оценок уже достаточно для достижения цели.";
             StatusMessage = $"Цель уже достигнута! Текущая оценка: {plan.CurrentGrade:F2}";
         }
         else
         {
             CurrentPlan = plan;
+            OnPropertyChanged(nameof(HasPlansRange));
+            OnPropertyChanged(nameof(HasAutoGradePlan));
             ServerStatus = $"План рассчитан. Текущая оценка: {plan.CurrentGrade:F2}";
             StatusMessage = $"План для предмета \"{SelectedSubject.Name}\" готов";
         }

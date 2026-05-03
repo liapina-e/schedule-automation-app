@@ -64,8 +64,8 @@ public class WhatIfViewModel : ViewModelBase
             }
 
             return AutoGradeAchieved
-                ? "🎓 Условие автомата выполнено"
-                : "📚 Условие автомата не выполнено";
+                ? "Условие автомата выполнено"
+                : "Условие автомата не выполнено";
         }
     }
 
