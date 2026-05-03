@@ -44,6 +44,7 @@ public class MainViewModel : ViewModelBase
                 if (value != null)
                 {
                     WhatIf.LoadFromSubject(value);
+                    OnPropertyChanged(nameof(WhatIf));
                 }
 
                 OnPropertyChanged(nameof(CurrentFormula));

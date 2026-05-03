@@ -80,16 +80,48 @@ public class WhatIfViewModel : ViewModelBase
 
     public void LoadFromSubject(Subject subject)
     {
+        foreach (WhatIfComponentViewModel old in Components)
+        {
+            old.SourceComponent.PropertyChanged -= OnSourceComponentPropertyChanged;
+            old.GradeChanged -= Recalculate;
+        }
+
         Components.Clear();
 
         foreach (GradeComponent component in subject.Formula)
         {
-            WhatIfComponentViewModel whatIfComponent = new WhatIfComponentViewModel(component);
-            whatIfComponent.GradeChanged += Recalculate;
-            Components.Add(whatIfComponent);
+            WhatIfComponentViewModel vm = new WhatIfComponentViewModel(component);
+            vm.GradeChanged += Recalculate;
+            component.PropertyChanged += OnSourceComponentPropertyChanged;
+            Components.Add(vm);
         }
 
         Recalculate();
+    }
+
+    private void OnSourceComponentPropertyChanged(
+        object sender,
+        System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(GradeComponent.IsGraded) ||
+            e.PropertyName == nameof(GradeComponent.CurrentGrade) ||
+            e.PropertyName == nameof(GradeComponent.IsBlocking) ||
+            e.PropertyName == nameof(GradeComponent.IsAutoGrade) ||
+            e.PropertyName == nameof(GradeComponent.AutoGradeMinScore))
+        {
+            if (sender is GradeComponent changed)
+            {
+                WhatIfComponentViewModel? vm = Components
+                    .FirstOrDefault(c => c.SourceComponent == changed);
+
+                if (vm != null)
+                {
+                    vm.SyncFromSource();
+                }
+            }
+
+            Recalculate();
+        }
     }
 
     private void Recalculate()
