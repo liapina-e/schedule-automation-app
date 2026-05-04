@@ -77,47 +77,57 @@ public class ApiService : IApiService
         }
     }
 
-    public async Task<PlanResponseDto?> CreateSubjectAsync(Subject subject)
+    public async Task<(PlanResponseDto? Result, ApiError Error)> CreateSubjectAsync(Subject subject)
     {
         try
         {
             CreateSubjectRequestDto request = MapToRequest(subject);
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/api/subjects", request);
 
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                return (null, ApiError.ValidationFailed);
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                return (null, ApiError.ServerUnavailable);
             }
 
             string json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions);
+            return (JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions), ApiError.None);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Ошибка при создании предмета: {ex.Message}");
-            return null;
+            return (null, ApiError.ServerUnavailable);
         }
     }
 
-    public async Task<PlanResponseDto?> UpdateSubjectAsync(Subject subject)
+    public async Task<(PlanResponseDto? Result, ApiError Error)> UpdateSubjectAsync(Subject subject)
     {
         try
         {
             CreateSubjectRequestDto request = MapToRequest(subject);
             HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"/api/subjects/{subject.Id}", request);
 
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                return (null, ApiError.ValidationFailed);
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                return (null, ApiError.ServerUnavailable);
             }
 
             string json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions);
+            return (JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions), ApiError.None);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Ошибка при обновлении предмета: {ex.Message}");
-            return null;
+            return (null, ApiError.ServerUnavailable);
         }
     }
 
