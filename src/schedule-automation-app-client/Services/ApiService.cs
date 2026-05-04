@@ -27,7 +27,7 @@ public class ApiService : IApiService
         _httpClient.Timeout = TimeSpan.FromSeconds(10);
     }
 
-    public async Task<ObservableCollection<Subject>> LoadSubjectsAsync()
+    public async Task<(ObservableCollection<Subject> Subjects, bool ServerAvailable)> LoadSubjectsAsync()
     {
         try
         {
@@ -35,7 +35,7 @@ public class ApiService : IApiService
 
             if (!listResponse.IsSuccessStatusCode)
             {
-                return new ObservableCollection<Subject>();
+                return (new ObservableCollection<Subject>(), false);
             }
 
             string listJson = await listResponse.Content.ReadAsStringAsync();
@@ -43,7 +43,7 @@ public class ApiService : IApiService
 
             if (items == null || items.Count == 0)
             {
-                return new ObservableCollection<Subject>();
+                return (new ObservableCollection<Subject>(), true);
             }
 
             ObservableCollection<Subject> result = new ObservableCollection<Subject>();
@@ -68,56 +68,66 @@ public class ApiService : IApiService
                 result.Add(MapToSubject(detail));
             }
 
-            return result;
+            return (result, true);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Ошибка при загрузке предметов: {ex.Message}");
-            return new ObservableCollection<Subject>();
+            return (new ObservableCollection<Subject>(), false);
         }
     }
 
-    public async Task<PlanResponseDto?> CreateSubjectAsync(Subject subject)
+    public async Task<(PlanResponseDto? Result, ApiError Error)> CreateSubjectAsync(Subject subject)
     {
         try
         {
             CreateSubjectRequestDto request = MapToRequest(subject);
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/api/subjects", request);
 
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                return (null, ApiError.ValidationFailed);
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                return (null, ApiError.ServerUnavailable);
             }
 
             string json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions);
+            return (JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions), ApiError.None);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Ошибка при создании предмета: {ex.Message}");
-            return null;
+            return (null, ApiError.ServerUnavailable);
         }
     }
 
-    public async Task<PlanResponseDto?> UpdateSubjectAsync(Subject subject)
+    public async Task<(PlanResponseDto? Result, ApiError Error)> UpdateSubjectAsync(Subject subject)
     {
         try
         {
             CreateSubjectRequestDto request = MapToRequest(subject);
             HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"/api/subjects/{subject.Id}", request);
 
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                return (null, ApiError.ValidationFailed);
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                return (null, ApiError.ServerUnavailable);
             }
 
             string json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions);
+            return (JsonSerializer.Deserialize<PlanResponseDto>(json, _jsonOptions), ApiError.None);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Ошибка при обновлении предмета: {ex.Message}");
-            return null;
+            return (null, ApiError.ServerUnavailable);
         }
     }
 

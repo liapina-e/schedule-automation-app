@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ public class MainViewModel : ViewModelBase
     private ObservableCollection<Subject> _subjects;
     private GradeComponent _selectedComponent;
     private readonly IApiService _apiService;
+    private readonly HashSet<Guid> _syncedIds = new HashSet<Guid>();
     private PlanResponseDto? _currentPlan;
     private bool _isLoading;
     private string _serverStatus;
@@ -205,7 +207,14 @@ public class MainViewModel : ViewModelBase
 
     private async void LoadSubjectsAsync()
     {
-        ObservableCollection<Subject> loaded = await _apiService.LoadSubjectsAsync();
+        var (loaded, serverAvailable) = await _apiService.LoadSubjectsAsync();
+
+        if (!serverAvailable)
+        {
+            ServerStatus = "Сервер недоступен при запуске. Перезапустите приложение после запуска сервера.";
+            StatusMessage = "Нет подключения к серверу.";
+            return;
+        }
 
         if (loaded.Count == 0)
         {
@@ -214,6 +223,11 @@ public class MainViewModel : ViewModelBase
         else
         {
             Subjects = loaded;
+            foreach (Subject s in loaded)
+            {
+                _syncedIds.Add(s.Id);
+            }
+
             StatusMessage = $"Загружено предметов: {loaded.Count}";
         }
     }
@@ -239,6 +253,58 @@ public class MainViewModel : ViewModelBase
         StatusMessage = "Считаем план...";
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         OnPropertyChanged(nameof(CanCalculatePlan));
+
+        if (!_syncedIds.Contains(SelectedSubject.Id))
+        {
+            var (created, createError) = await _apiService.CreateSubjectAsync(SelectedSubject);
+
+            if (createError == ApiError.ValidationFailed)
+            {
+                IsLoading = false;
+                ServerStatus = "Некорректные данные в формуле. Проверьте значения оценок (0–10), сложности (1–10) и минимума для автомата (0–10).";
+                StatusMessage = "Ошибка в данных формулы.";
+                (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(CanCalculatePlan));
+                return;
+            }
+
+            if (createError == ApiError.ServerUnavailable || created == null)
+            {
+                IsLoading = false;
+                ServerStatus = "Сервер недоступен. Убедитесь что сервер запущен на localhost:5284.";
+                StatusMessage = "Не удалось сохранить предмет на сервере.";
+                (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(CanCalculatePlan));
+                return;
+            }
+
+            SelectedSubject.Id = created.Id;
+            _syncedIds.Add(SelectedSubject.Id);
+        }
+        else
+        {
+            var (_, updateError) = await _apiService.UpdateSubjectAsync(SelectedSubject);
+
+            if (updateError == ApiError.ValidationFailed)
+            {
+                IsLoading = false;
+                ServerStatus = "Некорректные данные в формуле. Проверьте значения оценок (0–10), сложности (1–10) и минимума для автомата (0–10).";
+                StatusMessage = "Ошибка в данных формулы.";
+                (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(CanCalculatePlan));
+                return;
+            }
+
+            if (updateError == ApiError.ServerUnavailable)
+            {
+                IsLoading = false;
+                ServerStatus = "Сервер недоступен. Убедитесь что сервер запущен на localhost:5284.";
+                StatusMessage = "Не удалось получить план — сервер недоступен.";
+                (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(CanCalculatePlan));
+                return;
+            }
+        }
 
         PlanResponseDto? plan = await _apiService.CalculatePlanAsync(SelectedSubject.Id);
 
@@ -299,24 +365,9 @@ public class MainViewModel : ViewModelBase
             return;
         }
 
-        IsLoading = true;
-        StatusMessage = "Сохраняем предмет...";
-
-        PlanResponseDto? response = await _apiService.CreateSubjectAsync(vm.Result);
-
-        IsLoading = false;
-
-        if (response == null)
-        {
-            ServerStatus = "Не удалось сохранить предмет — сервер недоступен.";
-            StatusMessage = "Ошибка при сохранении.";
-            return;
-        }
-
-        vm.Result.Id = response.Id;
         Subjects.Add(vm.Result);
         SelectedSubject = vm.Result;
-        StatusMessage = $"Добавлен предмет: {vm.Result.Name}";
+        StatusMessage = $"Добавлен предмет: {vm.Result.Name}. Настройте формулу и нажмите «Рассчитать план».";
     }
 
     private async void ExecuteEditSubject()
@@ -350,14 +401,22 @@ public class MainViewModel : ViewModelBase
         SelectedSubject.HasAutoGrade = vm.Result.HasAutoGrade;
         SelectedSubject.AutoGradeMinScore = vm.Result.AutoGradeMinScore;
 
+        if (!_syncedIds.Contains(SelectedSubject.Id))
+        {
+            OnPropertyChanged(nameof(SelectedSubject));
+            UpdateStatusMessage();
+            StatusMessage = $"Предмет обновлён: {SelectedSubject.Name}";
+            return;
+        }
+
         IsLoading = true;
         StatusMessage = "Обновляем предмет...";
 
-        PlanResponseDto? response = await _apiService.UpdateSubjectAsync(SelectedSubject);
+        var (_, error) = await _apiService.UpdateSubjectAsync(SelectedSubject);
 
         IsLoading = false;
 
-        if (response == null)
+        if (error == ApiError.ServerUnavailable)
         {
             ServerStatus = "Не удалось обновить предмет — сервер недоступен.";
             StatusMessage = "Ошибка при обновлении.";
@@ -378,21 +437,26 @@ public class MainViewModel : ViewModelBase
 
         string subjectName = SelectedSubject.Name;
         Guid subjectId = SelectedSubject.Id;
+        bool wasOnServer = _syncedIds.Contains(subjectId);
 
         Subjects.Remove(SelectedSubject);
+        _syncedIds.Remove(subjectId);
         SelectedSubject = null;
 
-        bool deleted = await _apiService.DeleteSubjectAsync(subjectId);
-
-        if (!deleted)
+        if (wasOnServer)
         {
-            ServerStatus = "Не удалось удалить предмет на сервере.";
+            bool deleted = await _apiService.DeleteSubjectAsync(subjectId);
+
+            if (!deleted)
+            {
+                ServerStatus = "Не удалось удалить предмет на сервере.";
+            }
         }
 
         StatusMessage = $"Удалён предмет: {subjectName}";
     }
 
-    private async void ExecuteAddComponent()
+    private void ExecuteAddComponent()
     {
         if (SelectedSubject == null)
         {
@@ -413,11 +477,9 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentFormula));
         RefreshFormulaStats();
         StatusMessage = $"Добавлен компонент: {component.Name}";
-
-        await SyncSubjectAsync();
     }
 
-    private async void ExecuteDeleteComponent()
+    private void ExecuteDeleteComponent()
     {
         if (SelectedSubject == null || SelectedComponent == null)
         {
@@ -430,8 +492,6 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentFormula));
         RefreshFormulaStats();
         StatusMessage = $"Удалён компонент: {componentName}";
-
-        await SyncSubjectAsync();
     }
 
     public void RefreshFormulaStats()
@@ -446,7 +506,7 @@ public class MainViewModel : ViewModelBase
 
     private async Task SyncSubjectAsync()
     {
-        if (SelectedSubject == null || !IsFormulaValid)
+        if (SelectedSubject == null || !IsFormulaValid || !_syncedIds.Contains(SelectedSubject.Id))
         {
             return;
         }
