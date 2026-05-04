@@ -70,11 +70,7 @@ public class SubjectsController : ControllerBase
             return NotFound(new { error = $"Предмет с ID {id} не найден." });
         }
 
-        OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
-        List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(subject);
-        OptimizationPlan planWithAuto = _calculationService.CalculateOptimizationPlanWithAuto(subject);
-        SubjectResponse response = SubjectMapper.ToResponse(subject, plan, plansRange, planWithAuto);
-
+        SubjectResponse response = BuildResponse(subject);
         _cache.Set(cacheKey, response, CacheDuration);
 
         return Ok(response);
@@ -101,13 +97,10 @@ public class SubjectsController : ControllerBase
             Subject subject = SubjectMapper.ToDomain(request);
             await _repository.AddAsync(subject);
 
-            OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
-            List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(subject);
-            OptimizationPlan planWithAuto = _calculationService.CalculateOptimizationPlanWithAuto(subject);
-            SubjectResponse response = SubjectMapper.ToResponse(subject, plan, plansRange, planWithAuto);
-            
+            SubjectResponse response = BuildResponse(subject);
             _cache.Set($"plan_{subject.Id}", response, CacheDuration);
             _cache.Remove(StatsCacheKey);
+
             return Ok(response);
         }
         catch (ArgumentException ex)
@@ -147,14 +140,11 @@ public class SubjectsController : ControllerBase
         try
         {
             await _repository.UpdateAsync(id, request);
-
             _cache.Remove($"plan_{id}");
+            _cache.Remove(StatsCacheKey);
 
             Subject? updated = await _repository.GetByIdAsync(id);
-            OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(updated!);
-            List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(updated!);
-            OptimizationPlan planWithAuto = _calculationService.CalculateOptimizationPlanWithAuto(updated!);
-            SubjectResponse response = SubjectMapper.ToResponse(updated!, plan, plansRange, planWithAuto);
+            SubjectResponse response = BuildResponse(updated!);
             _cache.Set($"plan_{id}", response, CacheDuration);
 
             return Ok(response);
@@ -163,67 +153,6 @@ public class SubjectsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-    }
-
-    [HttpPost("{id}/what-if")]
-    public async Task<IActionResult> WhatIf(Guid id, [FromBody] List<WhatIfComponentDto> hypotheticalGrades)
-    {
-        if (id == Guid.Empty)
-        {
-            return BadRequest(new { error = "Неверный ID предмета." });
-        }
-
-        if (hypotheticalGrades == null || hypotheticalGrades.Count == 0)
-        {
-            return BadRequest(new { error = "Нужно передать хотя бы одну гипотетическую оценку." });
-        }
-
-        Subject? subject = await _repository.GetByIdAsync(id);
-
-        if (subject == null)
-        {
-            return NotFound(new { error = $"Предмет с ID {id} не найден." });
-        }
-
-        WhatIfResponse result = _calculationService.CalculateWhatIf(subject, hypotheticalGrades);
-        return Ok(result);
-    }
-
-    [HttpGet("{id}/optimization-plan")]
-    public async Task<IActionResult> GetOptimizationPlan(Guid id)
-    {
-        if (id == Guid.Empty)
-        {
-            return BadRequest(new { error = "Неверный ID предмета." });
-        }
-
-        Subject? subject = await _repository.GetByIdAsync(id);
-
-        if (subject == null)
-        {
-            return NotFound(new { error = $"Предмет с ID {id} не найден." });
-        }
-
-        OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
-
-        return Ok(new
-        {
-            SubjectId = subject.Id,
-            SubjectName = subject.Name,
-            TargetGrade = subject.TargetGrade,
-            CurrentGrade = Math.Round(plan.CurrentGrade, 2),
-            NecessaryPoints = Math.Round(plan.NecessaryPoints, 2),
-            IsAchievable = plan.IsAchievable,
-            Recommendation = plan.Recommendation,
-            Plan = plan.Items.Select(i => new
-            {
-                i.ComponentName,
-                CurrentGrade = Math.Round(i.CurrentGrade, 2),
-                i.RequiredGrade,
-                i.Priority,
-                i.Reason
-            })
-        });
     }
 
     [HttpDelete("{id}")]
@@ -244,6 +173,16 @@ public class SubjectsController : ControllerBase
         _cache.Remove($"plan_{id}");
         _cache.Remove(StatsCacheKey);
         await _repository.DeleteAsync(subject);
+
         return NoContent();
+    }
+
+    private SubjectResponse BuildResponse(Subject subject)
+    {
+        OptimizationPlan plan = _calculationService.CalculateOptimizationPlan(subject);
+        List<OptimizationPlan> plansRange = _calculationService.CalculatePlansRange(subject);
+        OptimizationPlan planWithAuto = _calculationService.CalculateOptimizationPlanWithAuto(subject);
+
+        return SubjectMapper.ToResponse(subject, plan, plansRange, planWithAuto);
     }
 }
