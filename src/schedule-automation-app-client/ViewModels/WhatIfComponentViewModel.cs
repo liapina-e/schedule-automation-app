@@ -10,6 +10,7 @@ public class WhatIfComponentViewModel : ViewModelBase
     private bool _isBlocking;
     private bool _isAutoGrade;
     private double _autoGradeMinScore;
+    private double _blockingMinimum;
 
     public GradeComponent SourceComponent { get; }
 
@@ -39,6 +40,12 @@ public class WhatIfComponentViewModel : ViewModelBase
     {
         get => _autoGradeMinScore;
         private set => SetField(ref _autoGradeMinScore, value);
+    }
+
+    public double BlockingMinimum
+    {
+        get => _blockingMinimum;
+        private set => SetField(ref _blockingMinimum, value);
     }
 
     public double HypotheticalGrade
@@ -79,6 +86,7 @@ public class WhatIfComponentViewModel : ViewModelBase
         _isBlocking = component.IsBlocking;
         _isAutoGrade = component.IsAutoGrade;
         _autoGradeMinScore = component.AutoGradeMinScore;
+        _blockingMinimum = component.BlockingMinimum;
         _hypotheticalGrade = component.CurrentGrade;
     }
 
@@ -88,6 +96,7 @@ public class WhatIfComponentViewModel : ViewModelBase
         IsBlocking = SourceComponent.IsBlocking;
         IsAutoGrade = SourceComponent.IsAutoGrade;
         AutoGradeMinScore = SourceComponent.AutoGradeMinScore;
+        BlockingMinimum = SourceComponent.BlockingMinimum;
         OnPropertyChanged(nameof(CurrentGrade));
 
         if (IsGraded)

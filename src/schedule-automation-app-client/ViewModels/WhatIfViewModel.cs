@@ -10,6 +10,7 @@ public class WhatIfViewModel : ViewModelBase
     private double _hypotheticalGrade;
     private bool _isBlockingConditionFailed;
     private bool _autoGradeAchieved;
+    private string _blockingWarningText;
 
     public ObservableCollection<WhatIfComponentViewModel> Components
     {
@@ -50,9 +51,11 @@ public class WhatIfViewModel : ViewModelBase
         }
     }
 
-    public string BlockingWarning => IsBlockingConditionFailed
-        ? "Блокирующий компонент ниже минимума (4). Итоговая оценка недостижима."
-        : string.Empty;
+    public string BlockingWarning
+    {
+        get => _blockingWarningText;
+        private set => SetField(ref _blockingWarningText, value);
+    }
 
     public string AutoGradeStatus
     {
@@ -76,6 +79,7 @@ public class WhatIfViewModel : ViewModelBase
     public WhatIfViewModel()
     {
         _components = new ObservableCollection<WhatIfComponentViewModel>();
+        _blockingWarningText = string.Empty;
     }
 
     public void LoadFromSubject(Subject subject)
@@ -106,6 +110,7 @@ public class WhatIfViewModel : ViewModelBase
         if (e.PropertyName == nameof(GradeComponent.IsGraded) ||
             e.PropertyName == nameof(GradeComponent.CurrentGrade) ||
             e.PropertyName == nameof(GradeComponent.IsBlocking) ||
+            e.PropertyName == nameof(GradeComponent.BlockingMinimum) ||
             e.PropertyName == nameof(GradeComponent.IsAutoGrade) ||
             e.PropertyName == nameof(GradeComponent.AutoGradeMinScore))
         {
@@ -143,8 +148,14 @@ public class WhatIfViewModel : ViewModelBase
         double weightedSum = Components.Sum(c => c.HypotheticalGrade * c.Weight);
         HypotheticalGrade = System.Math.Round(weightedSum / totalWeight, 2);
 
-        IsBlockingConditionFailed = Components
-            .Any(c => c.IsBlocking && c.HypotheticalGrade < 4.0);
+        WhatIfComponentViewModel? failedBlocking = Components
+            .FirstOrDefault(c => c.IsBlocking && c.HypotheticalGrade < c.BlockingMinimum);
+
+        IsBlockingConditionFailed = failedBlocking != null;
+
+        BlockingWarning = failedBlocking != null
+            ? $"Блокирующий компонент «{failedBlocking.Name}» ниже минимума ({failedBlocking.BlockingMinimum:F1}). Итоговая оценка недостижима."
+            : string.Empty;
 
         AutoGradeAchieved = Components
             .Where(c => c.IsAutoGrade)
@@ -152,7 +163,6 @@ public class WhatIfViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(HypotheticalGradeText));
         OnPropertyChanged(nameof(HypotheticalGradeColor));
-        OnPropertyChanged(nameof(BlockingWarning));
         OnPropertyChanged(nameof(AutoGradeStatus));
         OnPropertyChanged(nameof(AutoGradeStatusColor));
         OnPropertyChanged(nameof(HasAutoGradeComponents));
