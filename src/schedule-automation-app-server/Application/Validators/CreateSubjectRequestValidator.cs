@@ -9,7 +9,7 @@ public class CreateSubjectRequestValidator : AbstractValidator<CreateSubjectRequ
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Название предмета не может быть пустым.")
-            .MaximumLength(100).WithMessage("Название не может быть длиннее 100 символов."); // подумать
+            .MaximumLength(100).WithMessage("Название не может быть длиннее 100 символов.");
 
         RuleFor(x => x.TargetGrade)
             .InclusiveBetween(4, 10).WithMessage("Целевая оценка должна быть от 4 до 10.");
