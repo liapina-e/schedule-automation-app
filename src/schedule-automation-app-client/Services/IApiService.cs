@@ -8,7 +8,7 @@ namespace schedule_automation_app_client.Services;
 
 public interface IApiService
 {
-    Task<ObservableCollection<Subject>> LoadSubjectsAsync();
+    Task<(ObservableCollection<Subject> Subjects, bool ServerAvailable)> LoadSubjectsAsync();
     Task<(PlanResponseDto? Result, ApiError Error)> CreateSubjectAsync(Subject subject);
     Task<(PlanResponseDto? Result, ApiError Error)> UpdateSubjectAsync(Subject subject);
     Task<bool> DeleteSubjectAsync(Guid id);

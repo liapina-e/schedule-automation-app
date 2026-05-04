@@ -207,7 +207,14 @@ public class MainViewModel : ViewModelBase
 
     private async void LoadSubjectsAsync()
     {
-        ObservableCollection<Subject> loaded = await _apiService.LoadSubjectsAsync();
+        var (loaded, serverAvailable) = await _apiService.LoadSubjectsAsync();
+
+        if (!serverAvailable)
+        {
+            ServerStatus = "Сервер недоступен при запуске. Перезапустите приложение после запуска сервера.";
+            StatusMessage = "Нет подключения к серверу.";
+            return;
+        }
 
         if (loaded.Count == 0)
         {
@@ -216,7 +223,6 @@ public class MainViewModel : ViewModelBase
         else
         {
             Subjects = loaded;
-
             foreach (Subject s in loaded)
             {
                 _syncedIds.Add(s.Id);
