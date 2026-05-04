@@ -82,7 +82,7 @@ public class GradeCalculationService : IGradeCalculationService
                                 $"а минимум — {failedComponent.MinimumGrade:F1}."
             );
         }
-        else if (maxAchievable < targetGrade - 1e-6)
+        else if (maxAchievable < targetGrade - 0.5 + 1e-6)
         {
             _logger.LogInformation(
                 "Предмет '{Name}': цель {Target} недостижима, максимум {Max:F2}",
@@ -308,7 +308,7 @@ public class GradeCalculationService : IGradeCalculationService
     double gap = Math.Max(0, subject.TargetGrade - currentGrade);
     double maxAchievable = CalculateMaxAchievableGrade(subject);
 
-    if (maxAchievable < subject.TargetGrade - 1e-6)
+    if (maxAchievable < subject.TargetGrade - 0.5 + 1e-6)
     {
         return new OptimizationPlan(
             subject: subject,

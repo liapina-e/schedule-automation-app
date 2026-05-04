@@ -35,6 +35,13 @@ public class CreateSubjectRequestValidator : AbstractValidator<CreateSubjectRequ
 
             component.RuleFor(c => c.CurrentGrade)
                 .InclusiveBetween(0, 10).WithMessage("Текущая оценка должна быть от 0 до 10.");
+
+            component.When(c => c.IsAutoGrade, () =>
+            {
+                component.RuleFor(c => c.AutoGradeMinScore)
+                    .InclusiveBetween(0, 10)
+                    .WithMessage("Минимальная оценка для автомата должна быть от 0 до 10.");
+            });
         });
     }
 }
