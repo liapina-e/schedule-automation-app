@@ -13,4 +13,5 @@ public record PlanResponseDto(
     List<OptimizationItemDto> OptimalPlan,
     List<GradePlanDto> PlansRange,
     bool HasAutoGradeOption,
-    AutoGradePlanDto? PlanWithAuto);
+    AutoGradePlanDto? PlanWithAuto,
+    List<ComponentResponseDto>? Components);

@@ -19,7 +19,6 @@ public class MainViewModel : ViewModelBase
     private string _statusMessage;
     private ObservableCollection<Subject> _subjects;
     private GradeComponent _selectedComponent;
-    private readonly IStorageService _storageService;
     private readonly IApiService _apiService;
     private PlanResponseDto? _currentPlan;
     private bool _isLoading;
@@ -158,7 +157,7 @@ public class MainViewModel : ViewModelBase
         get => _currentPlan;
         set => SetField(ref _currentPlan, value);
     }
-    
+
     public bool HasPlansRange =>
         CurrentPlan != null &&
         CurrentPlan.PlansRange != null &&
@@ -176,7 +175,7 @@ public class MainViewModel : ViewModelBase
         get => _whatIf;
         set => SetField(ref _whatIf, value);
     }
-    
+
     public bool CanSelectBlockingMinimum =>
         SelectedComponent != null && SelectedComponent.IsBlocking;
 
@@ -191,7 +190,6 @@ public class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
-        _storageService = new JsonStorageService();
         _apiService = new ApiService();
         _whatIf = new WhatIfViewModel();
         WhatIf = _whatIf;
@@ -207,7 +205,7 @@ public class MainViewModel : ViewModelBase
 
     private async void LoadSubjectsAsync()
     {
-        ObservableCollection<Subject> loaded = await _storageService.LoadAsync();
+        ObservableCollection<Subject> loaded = await _apiService.LoadSubjectsAsync();
 
         if (loaded.Count == 0)
         {
@@ -218,11 +216,6 @@ public class MainViewModel : ViewModelBase
             Subjects = loaded;
             StatusMessage = $"Загружено предметов: {loaded.Count}";
         }
-    }
-
-    private async void SaveSubjectsAsync()
-    {
-        await _storageService.SaveAsync(Subjects);
     }
 
     private void InitializeCommands()
@@ -247,7 +240,7 @@ public class MainViewModel : ViewModelBase
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         OnPropertyChanged(nameof(CanCalculatePlan));
 
-        PlanResponseDto? plan = await _apiService.CalculatePlanAsync(SelectedSubject);
+        PlanResponseDto? plan = await _apiService.CalculatePlanAsync(SelectedSubject.Id);
 
         IsLoading = false;
 
@@ -301,13 +294,29 @@ public class MainViewModel : ViewModelBase
             dialog.Show();
         }
 
-        if (vm.Result != null)
+        if (vm.Result == null)
         {
-            Subjects.Add(vm.Result);
-            SelectedSubject = vm.Result;
-            StatusMessage = $"Добавлен предмет: {vm.Result.Name}";
-            SaveSubjectsAsync();
+            return;
         }
+
+        IsLoading = true;
+        StatusMessage = "Сохраняем предмет...";
+
+        PlanResponseDto? response = await _apiService.CreateSubjectAsync(vm.Result);
+
+        IsLoading = false;
+
+        if (response == null)
+        {
+            ServerStatus = "Не удалось сохранить предмет — сервер недоступен.";
+            StatusMessage = "Ошибка при сохранении.";
+            return;
+        }
+
+        vm.Result.Id = response.Id;
+        Subjects.Add(vm.Result);
+        SelectedSubject = vm.Result;
+        StatusMessage = $"Добавлен предмет: {vm.Result.Name}";
     }
 
     private async void ExecuteEditSubject()
@@ -331,20 +340,36 @@ public class MainViewModel : ViewModelBase
             dialog.Show();
         }
 
-        if (vm.Result != null)
+        if (vm.Result == null)
         {
-            SelectedSubject.Name = vm.Result.Name;
-            SelectedSubject.TargetGrade = vm.Result.TargetGrade;
-            SelectedSubject.HasAutoGrade = vm.Result.HasAutoGrade;
-            SelectedSubject.AutoGradeMinScore = vm.Result.AutoGradeMinScore;
-            OnPropertyChanged(nameof(SelectedSubject));
-            UpdateStatusMessage();
-            StatusMessage = $"Предмет обновлён: {SelectedSubject.Name}";
-            SaveSubjectsAsync();
+            return;
         }
+
+        SelectedSubject.Name = vm.Result.Name;
+        SelectedSubject.TargetGrade = vm.Result.TargetGrade;
+        SelectedSubject.HasAutoGrade = vm.Result.HasAutoGrade;
+        SelectedSubject.AutoGradeMinScore = vm.Result.AutoGradeMinScore;
+
+        IsLoading = true;
+        StatusMessage = "Обновляем предмет...";
+
+        PlanResponseDto? response = await _apiService.UpdateSubjectAsync(SelectedSubject);
+
+        IsLoading = false;
+
+        if (response == null)
+        {
+            ServerStatus = "Не удалось обновить предмет — сервер недоступен.";
+            StatusMessage = "Ошибка при обновлении.";
+            return;
+        }
+
+        OnPropertyChanged(nameof(SelectedSubject));
+        UpdateStatusMessage();
+        StatusMessage = $"Предмет обновлён: {SelectedSubject.Name}";
     }
 
-    private void ExecuteDeleteSubject()
+    private async void ExecuteDeleteSubject()
     {
         if (SelectedSubject == null)
         {
@@ -352,13 +377,22 @@ public class MainViewModel : ViewModelBase
         }
 
         string subjectName = SelectedSubject.Name;
+        Guid subjectId = SelectedSubject.Id;
+
         Subjects.Remove(SelectedSubject);
         SelectedSubject = null;
+
+        bool deleted = await _apiService.DeleteSubjectAsync(subjectId);
+
+        if (!deleted)
+        {
+            ServerStatus = "Не удалось удалить предмет на сервере.";
+        }
+
         StatusMessage = $"Удалён предмет: {subjectName}";
-        SaveSubjectsAsync();
     }
 
-    private void ExecuteAddComponent()
+    private async void ExecuteAddComponent()
     {
         if (SelectedSubject == null)
         {
@@ -379,10 +413,11 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentFormula));
         RefreshFormulaStats();
         StatusMessage = $"Добавлен компонент: {component.Name}";
-        SaveSubjectsAsync();
+
+        await SyncSubjectAsync();
     }
 
-    private void ExecuteDeleteComponent()
+    private async void ExecuteDeleteComponent()
     {
         if (SelectedSubject == null || SelectedComponent == null)
         {
@@ -395,7 +430,8 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentFormula));
         RefreshFormulaStats();
         StatusMessage = $"Удалён компонент: {componentName}";
-        SaveSubjectsAsync();
+
+        await SyncSubjectAsync();
     }
 
     public void RefreshFormulaStats()
@@ -406,7 +442,16 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanCalculatePlan));
         OnPropertyChanged(nameof(CanSelectBlockingMinimum));
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
-        SaveSubjectsAsync();
+    }
+
+    private async Task SyncSubjectAsync()
+    {
+        if (SelectedSubject == null || !IsFormulaValid)
+        {
+            return;
+        }
+
+        await _apiService.UpdateSubjectAsync(SelectedSubject);
     }
 
     private void UpdateStatusMessage()
