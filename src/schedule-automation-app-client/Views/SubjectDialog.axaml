@@ -52,7 +52,7 @@
 
                     <StackPanel Spacing="4"
                                 IsVisible="{Binding HasAutoGrade}">
-                        <TextBlock Text="Минимальная средняя оценка для автомата"
+                        <TextBlock Text="Минимальная оценка для автомата"
                                    FontSize="12"
                                    Foreground="#555"/>
                         <NumericUpDown Value="{Binding AutoGradeMinScoreValue}"
@@ -61,7 +61,11 @@
                                        Increment="0.5"
                                        FormatString="F1"
                                        AllowSpin="True"/>
-                        <TextBlock Text="Если текущая средняя оценка выше этого порога — автомат получен"
+                        <TextBlock Text="{Binding AutoGradeError}"
+                                   Foreground="#dc3545"
+                                   FontSize="12"
+                                   IsVisible="{Binding AutoGradeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Text="Если средняя оценка по автоматному компоненту выше этого порога — автомат получен"
                                    FontSize="11"
                                    Foreground="#888"
                                    TextWrapping="Wrap"/>
