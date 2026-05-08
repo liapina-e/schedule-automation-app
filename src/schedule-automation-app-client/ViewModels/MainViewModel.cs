@@ -38,18 +38,24 @@ public class MainViewModel : ViewModelBase
         get => _selectedSubject;
         set
         {
+            if (_selectedSubject?.Formula != null)
+            {
+                _selectedSubject.Formula.CollectionChanged -= OnFormulaCollectionChanged;
+            }
+
             if (SetField(ref _selectedSubject, value))
             {
                 CurrentPlan = null;
 
                 if (value != null)
                 {
+                    value.Formula.CollectionChanged += OnFormulaCollectionChanged;
                     WhatIf.LoadFromSubject(value);
                     OnPropertyChanged(nameof(WhatIf));
                 }
 
                 OnPropertyChanged(nameof(CurrentFormula));
-                OnPropertyChanged(nameof(CanCalculatePlan));
+                RefreshFormulaStats();
                 UpdateStatusMessage();
                 RaiseCanExecuteForCommands();
             }
@@ -502,6 +508,15 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanCalculatePlan));
         OnPropertyChanged(nameof(CanSelectBlockingMinimum));
         (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+    }
+    
+    private void OnFormulaCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        RefreshFormulaStats();
+        if (SelectedSubject != null)
+        {
+            WhatIf.LoadFromSubject(SelectedSubject);
+        }
     }
 
     private async Task SyncSubjectAsync()
