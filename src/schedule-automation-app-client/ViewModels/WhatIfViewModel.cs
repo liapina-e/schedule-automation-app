@@ -47,7 +47,7 @@ public class WhatIfViewModel : ViewModelBase
                 return "#dc3545";
             }
 
-            return HypotheticalGrade >= 6 ? "#28a745" : "#dc3545";
+            return HypotheticalGrade >= 4 ? "#28a745" : "#dc3545";
         }
     }
 
