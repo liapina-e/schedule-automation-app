@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace schedule_automation_app_client;
 
@@ -54,9 +53,30 @@ class Program
                 RedirectStandardError = false
             };
 
-            Process.Start(startInfo);
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "chmod",
+                    Arguments = $"+x \"{serverPath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                })?.WaitForExit();
+            }
 
-            Thread.Sleep(10000);
+            Process.Start(startInfo);
+            
+            int attempts = 0;
+            while (attempts < 20)
+            {
+                System.Threading.Thread.Sleep(500);
+                bool up = System.Net.NetworkInformation.IPGlobalProperties
+                    .GetIPGlobalProperties()
+                    .GetActiveTcpListeners()
+                    .Any(ep => ep.Port == 5284);
+                if (up) break;
+                attempts++;
+            }
         }
         catch (Exception ex)
         {
