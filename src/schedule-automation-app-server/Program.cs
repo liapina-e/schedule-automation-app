@@ -7,6 +7,7 @@ using schedule_automation_app_server.Infrastructure.Repositories;
 using schedule_automation_app_server.WebAPI.Middleware;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://localhost:5284");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
