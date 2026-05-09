@@ -2,7 +2,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Velopack;
 
 namespace schedule_automation_app_client;
@@ -36,6 +38,16 @@ class Program
                 return;
             }
 
+            bool alreadyRunning = System.Net.NetworkInformation.IPGlobalProperties
+                .GetIPGlobalProperties()
+                .GetActiveTcpListeners()
+                .Any(ep => ep.Port == 5284);
+
+            if (alreadyRunning)
+            {
+                return;
+            }
+
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = serverPath,
@@ -46,6 +58,8 @@ class Program
             };
 
             Process.Start(startInfo);
+
+            Thread.Sleep(10000);
         }
         catch (Exception ex)
         {
