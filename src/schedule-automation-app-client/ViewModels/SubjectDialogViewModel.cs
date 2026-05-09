@@ -11,6 +11,7 @@ public class SubjectDialogViewModel : ViewModelBase
     private decimal? _targetGradeValue = 6;
     private string _nameError = string.Empty;
     private string _gradeError = string.Empty;
+    private string _autoGradeError = string.Empty;
     private bool _isEditMode;
     private bool _hasAutoGrade;
     private decimal? _autoGradeMinScoreValue = 8;
@@ -40,13 +41,23 @@ public class SubjectDialogViewModel : ViewModelBase
     public bool HasAutoGrade
     {
         get => _hasAutoGrade;
-        set => SetField(ref _hasAutoGrade, value);
+        set
+        {
+            SetField(ref _hasAutoGrade, value);
+            ValidateAutoGrade();
+            (SaveCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
     }
 
     public decimal? AutoGradeMinScoreValue
     {
         get => _autoGradeMinScoreValue;
-        set => SetField(ref _autoGradeMinScoreValue, value);
+        set
+        {
+            SetField(ref _autoGradeMinScoreValue, value);
+            ValidateAutoGrade();
+            (SaveCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
     }
 
     public string NameError
@@ -59,6 +70,12 @@ public class SubjectDialogViewModel : ViewModelBase
     {
         get => _gradeError;
         set => SetField(ref _gradeError, value);
+    }
+
+    public string AutoGradeError
+    {
+        get => _autoGradeError;
+        set => SetField(ref _autoGradeError, value);
     }
 
     public bool IsEditMode
@@ -100,6 +117,7 @@ public class SubjectDialogViewModel : ViewModelBase
         return !string.IsNullOrWhiteSpace(Name)
                && string.IsNullOrEmpty(NameError)
                && string.IsNullOrEmpty(GradeError)
+               && string.IsNullOrEmpty(AutoGradeError)
                && TargetGradeValue.HasValue;
     }
 
@@ -149,7 +167,7 @@ public class SubjectDialogViewModel : ViewModelBase
     {
         if (!TargetGradeValue.HasValue)
         {
-            GradeError = "Введите оценку";
+            GradeError = "Оценка некорректна";
         }
         else if (TargetGradeValue.Value < 4)
         {
@@ -162,6 +180,32 @@ public class SubjectDialogViewModel : ViewModelBase
         else
         {
             GradeError = string.Empty;
+        }
+    }
+
+    private void ValidateAutoGrade()
+    {
+        if (!HasAutoGrade)
+        {
+            AutoGradeError = string.Empty;
+            return;
+        }
+
+        if (!AutoGradeMinScoreValue.HasValue)
+        {
+            AutoGradeError = "Оценка некорректна";
+        }
+        else if (AutoGradeMinScoreValue.Value < 4)
+        {
+            AutoGradeError = "Минимальная оценка для автомата — от 4";
+        }
+        else if (AutoGradeMinScoreValue.Value > 10)
+        {
+            AutoGradeError = "Максимальная оценка для автомата — 10";
+        }
+        else
+        {
+            AutoGradeError = string.Empty;
         }
     }
 }

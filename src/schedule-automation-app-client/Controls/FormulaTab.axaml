@@ -78,7 +78,7 @@
                                         Binding="{Binding IsAutoGrade}"
                                         Width="80"/>
 
-                <DataGridTemplateColumn Header="Мин. для автомата" Width="130">
+                <DataGridTemplateColumn Header="Мин. для автомата" Width="140">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding AutoGradeMinScore, StringFormat={}{0:F1}}"
@@ -90,9 +90,11 @@
                         <DataTemplate>
                             <NumericUpDown Value="{Binding AutoGradeMinScore}"
                                            Minimum="0"
-                                           Maximum="10"
-                                           Increment="0.5"
-                                           FormatString="F1"/>
+                                           Maximum="10.1"
+                                           Increment="0.1"
+                                           FormatString="F1"
+                                           IsEnabled="{Binding IsAutoGrade}"
+                                           ClipValueToMinMax="True"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
