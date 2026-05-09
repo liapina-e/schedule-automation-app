@@ -174,4 +174,111 @@ public class DomainEntityTests
         GradeComponent c = new GradeComponent("А", 50, 5, 5);
         Assert.Equal(0.5, c.WeightAsDecimal(), precision: 3);
     }
+    
+    
+    [Fact]
+    public void Subject_ValidNameAndGrade_HasCorrectProperties()
+    {
+        Subject subject = new Subject("Биология", 6);
+        Assert.Equal("Биология", subject.Name);
+        Assert.Equal(6, subject.TargetGrade);
+        Assert.NotEqual(Guid.Empty, subject.Id);
+        Assert.Empty(subject.Components);
+    }
+
+    [Fact]
+    public void Subject_AddComponent_AppearsInCollection()
+    {
+        Subject subject = new Subject("Физика", 7);
+        GradeComponent component = new GradeComponent("Экзамен", 100, 5, 5);
+        subject.AddComponent(component);
+
+        Assert.Single(subject.Components);
+        Assert.Equal("Экзамен", subject.Components[0].Name);
+    }
+
+    [Fact]
+    public void Subject_UpdateWithValidData_ChangesProperties()
+    {
+        Subject subject = new Subject("Старое", 5);
+        subject.Update("Новое", 9);
+        Assert.Equal("Новое", subject.Name);
+        Assert.Equal(9, subject.TargetGrade);
+    }
+
+    [Fact]
+    public void Subject_UpdateWithEmptyName_ThrowsDomainValidationException()
+    {
+        Subject subject = new Subject("Тест", 7);
+        Assert.Throws<DomainValidationException>(() => subject.Update("", 7));
+    }
+
+    [Fact]
+    public void GradeComponent_WeightExactly0_CreatesSuccessfully()
+    {
+        GradeComponent c = new GradeComponent("А", 0, 5, 5);
+        Assert.Equal(0, c.Weight);
+    }
+
+    [Fact]
+    public void GradeComponent_WeightExactly100_CreatesSuccessfully()
+    {
+        GradeComponent c = new GradeComponent("А", 100, 5, 5);
+        Assert.Equal(100, c.Weight);
+    }
+
+    [Fact]
+    public void GradeComponent_ComplexityExactly1_CreatesSuccessfully()
+    {
+        GradeComponent c = new GradeComponent("А", 50, 1, 5);
+        Assert.Equal(1, c.Complexity);
+    }
+
+    [Fact]
+    public void GradeComponent_ComplexityExactly10_CreatesSuccessfully()
+    {
+        GradeComponent c = new GradeComponent("А", 50, 10, 5);
+        Assert.Equal(10, c.Complexity);
+    }
+
+    [Fact]
+    public void GradeComponent_IsBlockingConditionMet_WhenNotBlocking()
+    {
+        GradeComponent c = new GradeComponent("А", 50, 5, 0) { IsBlocking = false };
+        Assert.True(c.IsBlockingConditionMet());
+    }
+
+    [Fact]
+    public void GradeComponent_IsBlockingConditionMet_WhenExactlyAtMinimum()
+    {
+        GradeComponent c = new GradeComponent("А", 50, 5, 4.0)
+        {
+            IsBlocking = true,
+            MinimumGrade = 4.0
+        };
+        Assert.True(c.IsBlockingConditionMet());
+    }
+
+    [Fact]
+    public void GradeComponent_WeightAsDecimal_Returns100PercentAs1()
+    {
+        GradeComponent c = new GradeComponent("А", 100, 5, 5);
+        Assert.Equal(1.0, c.WeightAsDecimal(), precision: 3);
+    }
+
+    [Fact]
+    public void GradeComponent_WeightAsDecimal_Returns0PercentAs0()
+    {
+        GradeComponent c = new GradeComponent("А", 0, 5, 5);
+        Assert.Equal(0.0, c.WeightAsDecimal(), precision: 3);
+    }
+
+    [Fact]
+    public void GradeComponent_DefaultFlags_AreFalse()
+    {
+        GradeComponent c = new GradeComponent("А", 50, 5, 5);
+        Assert.False(c.IsBlocking);
+        Assert.False(c.IsGraded);
+        Assert.False(c.IsAutoGrade);
+    }
 }

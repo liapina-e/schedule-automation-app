@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schedule-automation-app-server", "schedule-automation-app-server.csproj", "{00EEFDD6-94B5-4CE7-8622-F0C1B9BB7124}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schedule-automation-app-server.Tests", "..\schedule-automation-app-server.Tests\schedule-automation-app-server.Tests.csproj", "{D66FA3D3-F2CD-4E3F-8B47-4645A078F4C0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{00EEFDD6-94B5-4CE7-8622-F0C1B9BB7124}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{00EEFDD6-94B5-4CE7-8622-F0C1B9BB7124}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{00EEFDD6-94B5-4CE7-8622-F0C1B9BB7124}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D66FA3D3-F2CD-4E3F-8B47-4645A078F4C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D66FA3D3-F2CD-4E3F-8B47-4645A078F4C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D66FA3D3-F2CD-4E3F-8B47-4645A078F4C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D66FA3D3-F2CD-4E3F-8B47-4645A078F4C0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
