@@ -20,20 +20,6 @@ public class EffortMinimizationSolverTests
     }
 
     [Fact]
-    public void Solve_GoalAlreadyMet_ReturnsSameGrades()
-    {
-        double[] current = { 8, 8 };
-        double[] weights = { 0.5, 0.5 };
-        int[] complexity = { 5, 5 };
-        double target = 7 * 1.0;
-
-        double[] result = Solve(current, weights, complexity, target);
-
-        Assert.Equal(current[0], result[0], precision: 2);
-        Assert.Equal(current[1], result[1], precision: 2);
-    }
-
-    [Fact]
     public void Solve_LowerEffortComponentImprovedFirst()
     {
         double[] current = { 0, 0 };

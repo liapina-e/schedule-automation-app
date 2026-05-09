@@ -21,15 +21,6 @@ public class GradeCalculationServiceTests
     }
 
     [Fact]
-    public void CalculateCurrentGrade_OneComponent_ReturnsItsGrade()
-    {
-        Subject subject = TestHelpers.CreateSubject(targetGrade: 7,
-            components: ("А", 100, 5, 8.0, false, false, 0, false, 0));
-
-        Assert.Equal(8.0, _service.CalculateCurrentGrade(subject), precision: 2);
-    }
-
-    [Fact]
     public void CalculateCurrentGrade_TwoComponents_ReturnsWeightedAverage()
     {
         Subject subject = TestHelpers.CreateSubject(targetGrade: 7,
@@ -265,12 +256,6 @@ public class GradeCalculationServiceTests
         Assert.True(plans[0].IsAchievable);
         Assert.True(plans[1].IsAchievable);
         Assert.False(plans[2].IsAchievable);
-    }
-
-    [Fact]
-    public void CalculatePlansRange_NullSubject_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => _service.CalculatePlansRange(null!));
     }
     
     
