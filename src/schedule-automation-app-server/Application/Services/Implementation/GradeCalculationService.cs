@@ -40,6 +40,10 @@ public class GradeCalculationService : IGradeCalculationService
 
     public OptimizationPlan CalculateOptimizationPlan(Subject subject)
     {
+        if (subject == null)
+        {
+            throw new ArgumentNullException(nameof(subject));
+        }
         return CalculateOptimizationPlanForGrade(subject, subject.TargetGrade);
     }
 

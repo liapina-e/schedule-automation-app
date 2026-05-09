@@ -1,6 +1,5 @@
 using schedule_automation_app_server.Domain.Entities;
 using schedule_automation_app_server.Domain.Exceptions;
-using Xunit;
 
 namespace schedule_automation_app_server.Tests;
 
