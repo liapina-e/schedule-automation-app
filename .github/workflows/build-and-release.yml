@@ -21,21 +21,13 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: Install Velopack
-      run: |
-        for i in 1 2 3; do
-          dotnet tool install -g vpk && break
-          echo "Retry $i, waiting 15s..."
-          sleep 15
-        done
-
     - name: Publish Server
       run: |
         dotnet publish src/schedule-automation-app-server/schedule-automation-app-server.csproj \
           -c Release \
           -r osx-arm64 \
           --self-contained true \
-          -o src/schedule-automation-app-client/publish/mac
+          -o published/mac
 
     - name: Publish Client
       run: |
@@ -43,29 +35,54 @@ jobs:
           -c Release \
           -r osx-arm64 \
           --self-contained true \
-          -o src/schedule-automation-app-client/publish/mac
+          -o published/mac
 
-    - name: Create macOS Installer
+    - name: Build .app bundle
       run: |
-        vpk pack \
-          --packId ScheduleAutomationApp \
-          --packVersion 1.0.0 \
-          --packDir src/schedule-automation-app-client/publish/mac \
-          --mainExe schedule-automation-app-client \
-          --packTitle "ScheduleAutomationApp" \
-          --outputDir src/schedule-automation-app-client/installer/mac
+        APP=ScheduleAutomationApp.app
+        mkdir -p "$APP/Contents/MacOS"
+        mkdir -p "$APP/Contents/Resources"
+        cp -r published/mac/* "$APP/Contents/MacOS/"
+        cat > "$APP/Contents/Info.plist" << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+          "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>CFBundleExecutable</key>
+          <string>schedule-automation-app-client</string>
+          <key>CFBundleIdentifier</key>
+          <string>ru.hse.schedule-automation-app</string>
+          <key>CFBundleName</key>
+          <string>ScheduleAutomationApp</string>
+          <key>CFBundleVersion</key>
+          <string>1.0.0</string>
+          <key>CFBundlePackageType</key>
+          <string>APPL</string>
+        </dict>
+        </plist>
+        EOF
+
+    - name: Create .pkg installer
+      run: |
+        pkgbuild \
+          --root ScheduleAutomationApp.app \
+          --identifier ru.hse.schedule-automation-app \
+          --version 1.0.0 \
+          --install-location /Applications/ScheduleAutomationApp.app \
+          ScheduleAutomationApp.pkg
 
     - name: Upload Installer as Artifact
       uses: actions/upload-artifact@v4
       with:
         name: macos-installer
-        path: src/schedule-automation-app-client/installer/mac/*.pkg
+        path: ScheduleAutomationApp.pkg
         retention-days: 30
 
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
       with:
-        files: src/schedule-automation-app-client/installer/mac/*.pkg
+        files: ScheduleAutomationApp.pkg
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
