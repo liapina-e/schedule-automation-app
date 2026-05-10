@@ -24,28 +24,27 @@ jobs:
     - name: Publish Server
       run: |
         cd src/schedule-automation-app-server
-        dotnet publish -c Release -r osx-arm64 --self-contained true \
-          -o ../schedule-automation-app-client/publish/mac
+        dotnet publish schedule-automation-app-server.csproj -c Release -r osx-arm64 --self-contained true -o ../schedule-automation-app-client/publish/mac
     
     - name: Publish Client
       run: |
         cd src/schedule-automation-app-client
-        dotnet publish -c Release -r osx-arm64 --self-contained true -o ./publish/mac
+        dotnet publish schedule-automation-app-client.csproj -c Release -r osx-arm64 --self-contained true -o ./publish/mac
     
     - name: Create macOS Installer
       run: |
         cd src/schedule-automation-app-client
         vpk pack \
           --packId ScheduleAutomationApp \
-          --packVersion ${GITHUB_REF_NAME#v} \
+          --packVersion 1.0.0 \
           --packDir ./publish/mac \
           --mainExe schedule-automation-app-client \
           --packTitle "Schedule Automation App" \
           --outputDir ./installer/mac
     
-    - name: Upload Installer to Release
-      uses: softprops/action-gh-release@v1
+    - name: Upload Installer
+      uses: actions/upload-artifact@v4
       with:
-        files: src/schedule-automation-app-client/installer/mac/*.pkg
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: macos-installer
+        path: src/schedule-automation-app-client/installer/mac/*.pkg
+        retention-days: 30
