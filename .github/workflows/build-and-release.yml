@@ -9,42 +9,53 @@ on:
 jobs:
   build-macos:
     runs-on: macos-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+      env:
+        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    
+      env:
+        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     - name: Install Velopack
       run: dotnet tool install -g vpk
-    
+
     - name: Publish Server
       run: |
-        cd src/schedule-automation-app-server
-        dotnet publish schedule-automation-app-server.csproj -c Release -r osx-arm64 --self-contained true -o ../schedule-automation-app-client/publish/mac
-    
+        dotnet publish src/schedule-automation-app-server/schedule-automation-app-server.csproj \
+          -c Release \
+          -r osx-arm64 \
+          --self-contained true \
+          -o src/schedule-automation-app-client/publish/mac
+
     - name: Publish Client
       run: |
-        cd src/schedule-automation-app-client
-        dotnet publish schedule-automation-app-client.csproj -c Release -r osx-arm64 --self-contained true -o ./publish/mac
-    
+        dotnet publish src/schedule-automation-app-client/schedule-automation-app-client.csproj \
+          -c Release \
+          -r osx-arm64 \
+          --self-contained true \
+          -o src/schedule-automation-app-client/publish/mac
+
     - name: Create macOS Installer
       run: |
-        cd src/schedule-automation-app-client
         vpk pack \
           --packId ScheduleAutomationApp \
           --packVersion 1.0.0 \
-          --packDir ./publish/mac \
+          --packDir src/schedule-automation-app-client/publish/mac \
           --mainExe schedule-automation-app-client \
           --packTitle "Schedule Automation App" \
-          --outputDir ./installer/mac
-    
+          --outputDir src/schedule-automation-app-client/installer/mac
+
     - name: Upload Installer
       uses: actions/upload-artifact@v4
       with:
         name: macos-installer
         path: src/schedule-automation-app-client/installer/mac/*.pkg
         retention-days: 30
+      env:
+        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
