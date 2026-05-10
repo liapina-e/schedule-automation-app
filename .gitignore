@@ -54,4 +54,6 @@ packages/
 *.db-wal
 src/schedule-automation-app-client 2/
 src/schedule-automation-app-client 3/
-*.zip
+*.zipsrc/schedule-automation-app-client/installer/
+src/schedule-automation-app-client/publish/
+src/schedule-automation-app-server/publish/
