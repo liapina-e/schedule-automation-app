@@ -1,0 +1,51 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Install Velopack
+      run: dotnet tool install -g vpk
+    
+    - name: Publish Server
+      run: |
+        cd src/schedule-automation-app-server
+        dotnet publish -c Release -r osx-arm64 --self-contained true \
+          -o ../schedule-automation-app-client/publish/mac
+    
+    - name: Publish Client
+      run: |
+        cd src/schedule-automation-app-client
+        dotnet publish -c Release -r osx-arm64 --self-contained true -o ./publish/mac
+    
+    - name: Create macOS Installer
+      run: |
+        cd src/schedule-automation-app-client
+        vpk pack \
+          --packId ScheduleAutomationApp \
+          --packVersion ${GITHUB_REF_NAME#v} \
+          --packDir ./publish/mac \
+          --mainExe schedule-automation-app-client \
+          --packTitle "Schedule Automation App" \
+          --outputDir ./installer/mac
+    
+    - name: Upload Installer to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: src/schedule-automation-app-client/installer/mac/*.pkg
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
