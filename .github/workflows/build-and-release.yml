@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-macos:
     runs-on: macos-latest
@@ -22,32 +25,37 @@ jobs:
       run: |
         for i in 1 2 3; do
           dotnet tool install -g vpk && break
-          echo "Retry $i..."
-          sleep 10
+          echo "Retry $i, waiting 15s..."
+          sleep 15
         done
 
     - name: Publish Server
       run: |
-        cd src/schedule-automation-app-server
-        dotnet publish -c Release -r osx-arm64 --self-contained true -o ../schedule-automation-app-client/publish/mac --no-restore
+        dotnet publish src/schedule-automation-app-server/schedule-automation-app-server.csproj \
+          -c Release \
+          -r osx-arm64 \
+          --self-contained true \
+          -o src/schedule-automation-app-client/publish/mac
 
     - name: Publish Client
       run: |
-        cd src/schedule-automation-app-client
-        dotnet publish -c Release -r osx-arm64 --self-contained true -o ./publish/mac --no-restore
+        dotnet publish src/schedule-automation-app-client/schedule-automation-app-client.csproj \
+          -c Release \
+          -r osx-arm64 \
+          --self-contained true \
+          -o src/schedule-automation-app-client/publish/mac
 
     - name: Create macOS Installer
       run: |
-        cd src/schedule-automation-app-client
         vpk pack \
           --packId ScheduleAutomationApp \
           --packVersion 1.0.0 \
-          --packDir ./publish/mac \
+          --packDir src/schedule-automation-app-client/publish/mac \
           --mainExe schedule-automation-app-client \
-          --packTitle "Schedule Automation App" \
-          --outputDir ./installer/mac
+          --packTitle "ScheduleAutomationApp" \
+          --outputDir src/schedule-automation-app-client/installer/mac
 
-    - name: Upload Installer
+    - name: Upload Installer as Artifact
       uses: actions/upload-artifact@v4
       with:
         name: macos-installer
@@ -59,4 +67,5 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: src/schedule-automation-app-client/installer/mac/*.pkg
-
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
