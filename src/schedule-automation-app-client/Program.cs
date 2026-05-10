@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Velopack;
 
 namespace schedule_automation_app_client;
 
@@ -14,8 +13,6 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        VelopackApp.Build().Run();
-
         StartServerIfNotRunning();
 
         BuildAvaloniaApp()
