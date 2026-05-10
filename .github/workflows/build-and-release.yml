@@ -19,7 +19,12 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Install Velopack
-      run: dotnet tool install -g vpk
+      run: |
+        for i in 1 2 3; do
+          dotnet tool install -g vpk && break
+          echo "Retry $i..."
+          sleep 10
+        done
 
     - name: Publish Server
       run: |
@@ -54,3 +59,4 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: src/schedule-automation-app-client/installer/mac/*.pkg
+
