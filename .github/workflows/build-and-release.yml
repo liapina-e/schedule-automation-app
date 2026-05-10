@@ -12,7 +12,6 @@ env:
 jobs:
   build-macos:
     runs-on: macos-latest
-
     steps:
     - uses: actions/checkout@v4
 
@@ -84,5 +83,67 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: ScheduleAutomationApp.pkg
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Publish Server
+      run: |
+        dotnet publish src/schedule-automation-app-server/schedule-automation-app-server.csproj `
+          -c Release `
+          -r win-x64 `
+          --self-contained true `
+          -o published\win
+
+    - name: Publish Client
+      run: |
+        dotnet publish src/schedule-automation-app-client/schedule-automation-app-client.csproj `
+          -c Release `
+          -r win-x64 `
+          --self-contained true `
+          -o published\win
+
+    - name: Create Windows Installer
+      run: |
+        $publishDir = "published\win"
+        $outputDir = "installer\win"
+        New-Item -ItemType Directory -Force -Path $outputDir
+
+        $installScript = @"
+        @echo off
+        echo Installing Schedule Automation App...
+        set INSTALL_DIR=%ProgramFiles%\ScheduleAutomationApp
+        mkdir "%INSTALL_DIR%" 2>nul
+        xcopy /E /Y /I . "%INSTALL_DIR%"
+        echo Creating desktop shortcut...
+        powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%USERPROFILE%\Desktop\ScheduleAutomationApp.lnk'); $s.TargetPath = '%INSTALL_DIR%\schedule-automation-app-client.exe'; $s.Save()"
+        echo Done! Shortcut created on Desktop.
+        pause
+        "@
+        Set-Content -Path "$publishDir\install.bat" -Value $installScript
+
+        Compress-Archive -Path "$publishDir\*" -DestinationPath "$outputDir\ScheduleAutomationApp-windows.zip"
+
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-installer
+        path: installer\win\ScheduleAutomationApp-windows.zip
+        retention-days: 30
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: installer\win\ScheduleAutomationApp-windows.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
