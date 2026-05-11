@@ -20,6 +20,14 @@ class Program
             .StartWithClassicDesktopLifetime(args);
     }
 
+    private static string GetDataDirectory()
+    {
+        string baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string dataDir = Path.Combine(baseDir, "ScheduleAutomationApp");
+        Directory.CreateDirectory(dataDir);
+        return dataDir;
+    }
+
     private static void StartServerIfNotRunning()
     {
         try
@@ -65,9 +73,12 @@ class Program
                 })?.WaitForExit();
             }
 
+            string dataDir = GetDataDirectory();
+
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = serverPath,
+                WorkingDirectory = dataDir,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = false,
