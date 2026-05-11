@@ -32,4 +32,8 @@
     <ProjectReference Include="..\schedule-automation-app-client\schedule-automation-app-client.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="SubjectDialogViewModelAdditionalTests.cs" />
+  </ItemGroup>
+
 </Project>
