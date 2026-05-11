@@ -388,11 +388,11 @@
                                                    Margin="10,0"/>
 
                                         <NumericUpDown Grid.Column="2"
-                                                       Value="{Binding HypotheticalGrade}"
+                                                       Value="{Binding HypotheticalGrade, Mode=TwoWay, FallbackValue=0, TargetNullValue=0}"
                                                        Minimum="0"
                                                        Maximum="10"
-                                                       Increment="0.5"
-                                                       FormatString="F1"
+                                                       Increment="0.1"
+                                                       FormatString="F3"
                                                        IsEnabled="{Binding !IsGraded}"/>
 
                                     </Grid>

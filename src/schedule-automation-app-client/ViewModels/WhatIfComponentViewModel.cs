@@ -11,11 +11,23 @@ public class WhatIfComponentViewModel : ViewModelBase
     private bool _isAutoGrade;
     private double _autoGradeMinScore;
     private double _blockingMinimum;
+    private string _name;
+    private double _weight;
 
     public GradeComponent SourceComponent { get; }
 
-    public string Name { get; }
-    public double Weight { get; }
+    public string Name
+    {
+        get => _name;
+        private set => SetField(ref _name, value);
+    }
+
+    public double Weight
+    {
+        get => _weight;
+        private set => SetField(ref _weight, value);
+    }
+
     public double CurrentGrade => SourceComponent.CurrentGrade;
 
     public bool IsGraded
@@ -80,8 +92,8 @@ public class WhatIfComponentViewModel : ViewModelBase
     public WhatIfComponentViewModel(GradeComponent component)
     {
         SourceComponent = component;
-        Name = component.Name;
-        Weight = component.Weight;
+        _name = component.Name;
+        _weight = component.Weight;
         _isGraded = component.IsGraded;
         _isBlocking = component.IsBlocking;
         _isAutoGrade = component.IsAutoGrade;
@@ -92,6 +104,8 @@ public class WhatIfComponentViewModel : ViewModelBase
 
     public void SyncFromSource()
     {
+        Name = SourceComponent.Name;
+        Weight = SourceComponent.Weight;
         IsGraded = SourceComponent.IsGraded;
         IsBlocking = SourceComponent.IsBlocking;
         IsAutoGrade = SourceComponent.IsAutoGrade;
