@@ -48,7 +48,7 @@ class Program
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = serverPath,
-                UseShellExecute = false,
+                UseShellExecute = RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
                 CreateNoWindow = true,
                 RedirectStandardOutput = false,
                 RedirectStandardError = false
