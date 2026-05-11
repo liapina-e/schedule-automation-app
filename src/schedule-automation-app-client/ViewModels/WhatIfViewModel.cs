@@ -114,8 +114,8 @@ public class WhatIfViewModel : ViewModelBase
             e.PropertyName == nameof(GradeComponent.IsAutoGrade) ||
             e.PropertyName == nameof(GradeComponent.AutoGradeMinScore) ||
             e.PropertyName == nameof(GradeComponent.Name) ||
-            e.PropertyName == nameof(GradeComponent.Weight))
-            
+            e.PropertyName == nameof(GradeComponent.Weight)) 
+        {
             if (sender is GradeComponent changed)
             {
                 WhatIfComponentViewModel? vm = Components
