@@ -217,7 +217,8 @@ public class GradeCalculationService : IGradeCalculationService
             .Sum(c => c.CurrentGrade * c.WeightAsDecimal());
 
         double totalWeight = subject.Components.Sum(c => c.WeightAsDecimal());
-        double targetWeightedSum = targetGrade * totalWeight - lockedSum;
+        double effectiveTarget = Math.Max(0, targetGrade - 0.5);
+        double targetWeightedSum = effectiveTarget * totalWeight - lockedSum;
 
         return new SolverInput(currentGrades, weights, complexities, targetWeightedSum, isBlocking, minimumGrades);
     }
@@ -391,7 +392,8 @@ public class GradeCalculationService : IGradeCalculationService
             .Sum(c => c.CurrentGrade * c.WeightAsDecimal());
 
         double totalWeight = subject.Components.Sum(c => c.WeightAsDecimal());
-        double targetWeightedSum = subject.TargetGrade * totalWeight - lockedSum;
+        double effectiveTarget = Math.Max(0, subject.TargetGrade - 0.5);
+        double targetWeightedSum = effectiveTarget * totalWeight - lockedSum;
 
         double[] optimalGrades = _solver.Solve(
             currentGrades,
