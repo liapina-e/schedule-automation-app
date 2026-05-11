@@ -62,6 +62,17 @@ jobs:
         </plist>
         EOF
 
+    - name: Create postinstall script
+      run: |
+        mkdir -p scripts
+        cat > scripts/postinstall << 'SCRIPT'
+        #!/bin/bash
+        xattr -cr /Applications/ScheduleAutomationApp.app
+        chmod +x /Applications/ScheduleAutomationApp.app/Contents/MacOS/schedule-automation-app-server
+        chmod +x /Applications/ScheduleAutomationApp.app/Contents/MacOS/schedule-automation-app-client
+        SCRIPT
+        chmod +x scripts/postinstall
+
     - name: Create .pkg installer
       run: |
         pkgbuild \
@@ -69,6 +80,7 @@ jobs:
           --identifier ru.hse.schedule-automation-app \
           --version 1.0.0 \
           --install-location /Applications/ScheduleAutomationApp.app \
+          --scripts scripts \
           ScheduleAutomationApp.pkg
 
     - name: Upload Installer as Artifact

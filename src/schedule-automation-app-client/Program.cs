@@ -9,6 +9,8 @@ namespace schedule_automation_app_client;
 
 class Program
 {
+    private static Process? _serverProcess;
+
     [STAThread]
     public static void Main(string[] args)
     {
@@ -44,17 +46,16 @@ class Program
                 return;
             }
 
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = serverPath,
-                UseShellExecute = RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
-                CreateNoWindow = true,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false
-            };
-
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "xattr",
+                    Arguments = $"-d com.apple.quarantine \"{serverPath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                })?.WaitForExit();
+
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "chmod",
@@ -64,10 +65,19 @@ class Program
                 })?.WaitForExit();
             }
 
-            Process.Start(startInfo);
-            
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = serverPath,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false
+            };
+
+            _serverProcess = Process.Start(startInfo);
+
             int attempts = 0;
-            while (attempts < 20)
+            while (attempts < 30)
             {
                 System.Threading.Thread.Sleep(500);
                 bool up = System.Net.NetworkInformation.IPGlobalProperties
@@ -81,6 +91,23 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"Не удалось запустить сервер: {ex.Message}");
+        }
+    }
+
+    public static void StopServer()
+    {
+        try
+        {
+            if (_serverProcess != null && !_serverProcess.HasExited)
+            {
+                _serverProcess.Kill(entireProcessTree: true);
+                _serverProcess.WaitForExit(3000);
+                _serverProcess.Dispose();
+                _serverProcess = null;
+            }
+        }
+        catch
+        {
         }
     }
 
