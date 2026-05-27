@@ -92,13 +92,8 @@
 
                 <Border Background="#FFF3CD"
                         CornerRadius="6"
-                        Padding="12">
-                    <Border.IsVisible>
-                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                            <Binding Path="CurrentPlan" Converter="{x:Static ObjectConverters.IsNotNull}"/>
-                            <Binding Path="CurrentPlan.IsAchievable" Converter="{x:Static BoolConverters.Not}"/>
-                        </MultiBinding>
-                    </Border.IsVisible>
+                        Padding="12"
+                        IsVisible="{Binding ShowUnachievableWarning}">
                     <StackPanel Spacing="6">
                         <TextBlock Text="Цель недостижима"
                                    FontWeight="SemiBold"
@@ -387,7 +382,8 @@
                                                    VerticalAlignment="Center"
                                                    Margin="10,0"/>
 
-                                        <NumericUpDown Grid.Column="2"
+                                        <NumericUpDown x:Name="WhatIfNumericUpDown"
+                                                       Grid.Column="2"
                                                        Value="{Binding HypotheticalGrade, Mode=TwoWay, FallbackValue=0, TargetNullValue=0}"
                                                        Minimum="0"
                                                        Maximum="10"

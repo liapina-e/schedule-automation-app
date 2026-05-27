@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using schedule_automation_app_client.Models;
@@ -136,14 +137,22 @@ public class WhatIfViewModel : ViewModelBase
         if (Components.Count == 0)
         {
             HypotheticalGrade = 0;
+            IsBlockingConditionFailed = false;
+            BlockingWarning = string.Empty;
+            OnPropertyChanged(nameof(HypotheticalGradeText));
+            OnPropertyChanged(nameof(HypotheticalGradeColor));
             return;
         }
 
         double totalWeight = Components.Sum(c => c.Weight);
 
-        if (totalWeight <= 0)
+        if (Math.Abs(totalWeight - 100) > 0.01)
         {
             HypotheticalGrade = 0;
+            IsBlockingConditionFailed = true;
+            BlockingWarning = $"Сумма весов компонентов должна быть равна 100% (сейчас {totalWeight:F0}%).";
+            OnPropertyChanged(nameof(HypotheticalGradeText));
+            OnPropertyChanged(nameof(HypotheticalGradeColor));
             return;
         }
 

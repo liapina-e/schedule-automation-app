@@ -24,6 +24,7 @@ public class MainViewModel : ViewModelBase
     private readonly HashSet<Guid> _syncedIds = new HashSet<Guid>();
     private PlanResponseDto? _currentPlan;
     private bool _isLoading;
+    private bool _isServerAvailable = false;
     private string _serverStatus;
     private WhatIfViewModel _whatIf;
 
@@ -147,23 +148,54 @@ public class MainViewModel : ViewModelBase
     public bool CanDeleteSubject => SelectedSubject != null;
     public bool CanAddComponent => SelectedSubject != null;
     public bool CanDeleteComponent => SelectedSubject != null && SelectedComponent != null;
+    
+    public bool ShowUnachievableWarning =>
+        (CurrentPlan != null && !CurrentPlan.IsAchievable) ||
+        (!string.IsNullOrEmpty(ServerStatus) && CurrentPlan == null);
 
     public bool IsLoading
     {
         get => _isLoading;
         set => SetField(ref _isLoading, value);
     }
+    
+    public bool IsServerAvailable
+    {
+        get => _isServerAvailable;
+        set
+        {
+            if (SetField(ref _isServerAvailable, value))
+            {
+                OnPropertyChanged(nameof(CanCalculatePlan));
+                (CalculatePlanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
+    }
 
     public string ServerStatus
     {
         get => _serverStatus;
-        set => SetField(ref _serverStatus, value);
+        set
+        {
+            if (SetField(ref _serverStatus, value))
+            {
+                OnPropertyChanged(nameof(ShowUnachievableWarning));
+            }
+        }
     }
 
     public PlanResponseDto? CurrentPlan
     {
         get => _currentPlan;
-        set => SetField(ref _currentPlan, value);
+        set
+        {
+            if (SetField(ref _currentPlan, value))
+            {
+                OnPropertyChanged(nameof(ShowUnachievableWarning));
+                OnPropertyChanged(nameof(HasPlansRange));
+                OnPropertyChanged(nameof(HasAutoGradePlan));
+            }
+        }
     }
 
     public bool HasPlansRange =>
@@ -176,7 +208,7 @@ public class MainViewModel : ViewModelBase
         CurrentPlan.HasAutoGradeOption &&
         CurrentPlan.PlanWithAuto != null;
 
-    public bool CanCalculatePlan => SelectedSubject != null && IsFormulaValid && !IsLoading;
+    public bool CanCalculatePlan => SelectedSubject != null && IsFormulaValid && !IsLoading && IsServerAvailable;
 
     public WhatIfViewModel WhatIf
     {
@@ -221,6 +253,9 @@ public class MainViewModel : ViewModelBase
             StatusMessage = "Нет подключения к серверу.";
             return;
         }
+        
+        IsServerAvailable = true;
+        ServerStatus = string.Empty;
 
         if (loaded.Count == 0)
         {

@@ -74,9 +74,23 @@
                                         Binding="{Binding IsBlocking}"
                                         Width="110"/>
 
-                <DataGridCheckBoxColumn Header="Автомат"
-                                        Binding="{Binding IsAutoGrade}"
-                                        Width="80"/>
+                <DataGridTemplateColumn Header="Автомат" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsAutoGrade}"
+                                      HorizontalAlignment="Center"
+                                      IsEnabled="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectedSubject.HasAutoGrade}"
+                                      IsHitTestVisible="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectedSubject.HasAutoGrade}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsAutoGrade}"
+                                      HorizontalAlignment="Center"
+                                      IsEnabled="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectedSubject.HasAutoGrade}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
 
                 <DataGridTemplateColumn Header="Мин. для автомата" Width="140">
                     <DataGridTemplateColumn.CellTemplate>
